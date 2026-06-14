@@ -2,7 +2,7 @@
 
 Material de apoio do curso **Arquitetura de Software: Pense e Decida como Arquiteto!**.
 
-Cada seção contém os slides das aulas em formato `.pdf`.
+Cada seção contém os material utilizado nas aulas em formato `.pdf`.
 
 ---
 
