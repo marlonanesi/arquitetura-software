@@ -1,0 +1,24 @@
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Arquivos temporários do Office (prefixo ~$)
+~$*
+
+# Fontes editáveis — apenas PDF vai para o repositório
+*.pptx
+
+# Arquivos compactados gerados localmente
+*.zip
+*.rar
+*.7z
+
+# Diretório interno do Claude Code
+.claude/
+
+# Pasta de trabalho do renderer (arquivos intermediários)
+renderer/
+
+# Pasta com versões antigas
+old/
