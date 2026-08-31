@@ -2,6 +2,10 @@
 
 Material de apoio do curso **Arquitetura de Software: Pense e Decida como Arquiteto!**.
 
+**Curso completo na Udemy com nosso cupom mensal dinâmico:**
+https://cloudforall.com.br/redirect/arquitetura-software/
+
+
 Cada seção contém os material utilizado nas aulas em formato `.pdf`.
 
 ---
