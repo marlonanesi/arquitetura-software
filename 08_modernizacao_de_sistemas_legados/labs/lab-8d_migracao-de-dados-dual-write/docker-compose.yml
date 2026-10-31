@@ -1,0 +1,33 @@
+# Migração de dados sem janela de manutenção: legado (modelo antigo, 20.000 registros) -> banco novo.
+#   API do serviço (flags de leitura e escrita)   http://localhost:9301
+# Os scripts de migração (backfill, verificação, reconciliação, carga) rodam no contêiner "migrador".
+# Credenciais fictícias, só do laboratório.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d legado"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: ./app
+    image: lunalog/migracao:1.0
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["9301:8000"]
+
+  migrador:
+    image: lunalog/migracao:1.0
+    profiles: ["ferramentas"]
+    working_dir: /scripts
+    volumes:
+      - ./scripts:/scripts:ro
+    depends_on:
+      postgres: { condition: service_healthy }

@@ -1,0 +1,29 @@
+name: lab-7a-retry
+
+services:
+  # A API de mapas: capacidade limitada e com um modelo simples de congestionamento.
+  mapas:
+    build: ./mapas
+    environment:
+      LIMITE_CONGESTAO: "${LIMITE_CONGESTAO:-80}"   # chegadas por segundo acima das quais ela "engasga"
+    ports:
+      - "9000:8000"
+
+  # O serviço de cotação, com a política de retry escolhida em tempo de execução.
+  cotacao:
+    build: ./cotacao
+    environment:
+      URL_MAPAS: http://mapas:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mapas
+
+  # Gerador de carga. Use: docker compose run --rm k6 run -e POLITICA=<politica> /scripts/carga.js
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - cotacao

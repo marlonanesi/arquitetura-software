@@ -1,0 +1,11 @@
+{
+  "usuarios": {
+    "ana":   { "cargo": "operador",  "transportadora": "rapido", "filial": "sp" },
+    "bruno": { "cargo": "motorista", "transportadora": "rapido", "filial": "sp" },
+    "carla": { "cargo": "motorista", "transportadora": "veloz",  "filial": "sp" },
+    "dora":  { "cargo": "gerente",   "transportadora": "rapido" },
+    "eva":   { "cargo": "auditor" },
+    "fabio": { "cargo": "motorista", "transportadora": "rapido", "filial": "rj" },
+    "gil":   { "cargo": "gerente",   "transportadora": "veloz" }
+  }
+}

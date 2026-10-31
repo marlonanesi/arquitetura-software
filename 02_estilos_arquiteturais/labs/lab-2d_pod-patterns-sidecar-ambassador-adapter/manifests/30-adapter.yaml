@@ -1,0 +1,98 @@
+# PADRÃO 3: ADAPTER
+# A aplicação legada expõe seu estado em um formato proprietário ("CHAVE=valor;CHAVE=valor").
+# O Prometheus só entende o formato de exposição dele. Em vez de alterar a aplicação, um
+# contêiner adapter no mesmo pod lê o status local e o converte, servindo /metrics.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adapter-scripts
+  namespace: padroes
+data:
+  legado.py: |
+    # A aplicação legada: expõe /status em formato proprietário e não sabe nada de Prometheus.
+    import random
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    estado = {"PEDIDOS_PROCESSADOS": 1200, "FILA": 4, "ERROS": 2}
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            estado["PEDIDOS_PROCESSADOS"] += random.randint(1, 5)
+            estado["FILA"] = random.randint(0, 12)
+            if random.random() < 0.2:
+                estado["ERROS"] += 1
+            corpo = ";".join(f"{k}={v}" for k, v in estado.items())
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(corpo.encode())
+        def log_message(self, *a):
+            pass
+
+    print("legado com /status proprietario na porta 8080", flush=True)
+    HTTPServer(("127.0.0.1", 8080), H).serve_forever()
+  adapter.py: |
+    # O adapter: traduz o formato proprietário para o formato de exposição do Prometheus.
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    NOMES = {
+        "PEDIDOS_PROCESSADOS": ("lunalog_pedidos_processados_total", "counter", "Pedidos processados"),
+        "FILA": ("lunalog_fila_tamanho", "gauge", "Tamanho atual da fila"),
+        "ERROS": ("lunalog_erros_total", "counter", "Erros acumulados"),
+    }
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != "/metrics":
+                self.send_response(404); self.end_headers(); return
+            bruto = urllib.request.urlopen("http://127.0.0.1:8080/status", timeout=2).read().decode()
+            linhas = []
+            for par in bruto.split(";"):
+                chave, valor = par.split("=")
+                nome, tipo, ajuda = NOMES[chave]
+                linhas += [f"# HELP {nome} {ajuda}", f"# TYPE {nome} {tipo}", f"{nome} {valor}"]
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.end_headers()
+            self.wfile.write(("\n".join(linhas) + "\n").encode())
+        def log_message(self, *a):
+            pass
+
+    print("adapter pronto: /metrics na porta 9100", flush=True)
+    HTTPServer(("0.0.0.0", 9100), H).serve_forever()
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: legado-com-adapter
+  namespace: padroes
+  labels: { app: legado-com-adapter }
+spec:
+  containers:
+    # Contêiner principal: a aplicação legada, intocada.
+    - name: legado
+      image: python:3.12-slim
+      command: ["python", "-u", "/app/legado.py"]
+      volumeMounts:
+        - { name: scripts, mountPath: /app }
+    # Adapter: lê http://127.0.0.1:8080/status (localhost é compartilhado no pod) e serve /metrics.
+    - name: adapter
+      image: python:3.12-slim
+      command: ["python", "-u", "/app/adapter.py"]
+      ports:
+        - containerPort: 9100
+      volumeMounts:
+        - { name: scripts, mountPath: /app }
+  volumes:
+    - name: scripts
+      configMap: { name: adapter-scripts }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: legado-metricas
+  namespace: padroes
+spec:
+  selector: { app: legado-com-adapter }
+  ports:
+    - port: 9100

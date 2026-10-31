@@ -1,0 +1,16 @@
+# Análise de hotspots no histórico do Git. Roda sob demanda; não deixa serviços no ar.
+#   docker compose run --rm analise python gerar_repositorio.py       cria um repositório de demonstração
+#   docker compose run --rm analise python hotspots.py /dados/repo-demo   analisa e gera os relatórios em ./saida
+services:
+  analise:
+    build: .
+    image: lunalog/hotspots:1.0
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./saida:/saida
+      - dados:/dados
+      # Para analisar o SEU repositório, monte-o (somente leitura) e aponte o script para ele, por exemplo:
+      #   docker compose run --rm -v "/caminho/do/seu/repo:/alvo:ro" analise python hotspots.py /alvo --desde "12 months ago"
+
+volumes:
+  dados:

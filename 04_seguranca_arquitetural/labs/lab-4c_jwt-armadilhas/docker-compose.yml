@@ -1,0 +1,43 @@
+name: lab-4c-jwt
+
+services:
+  # O mesmo provedor de identidade do lab 4B (realm lunalog).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-exemplo
+      KC_HOSTNAME: http://localhost:8180
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-lunalog.json:/opt/keycloak/data/import/realm-lunalog.json:ro
+    ports:
+      - "8180:8080"
+
+  # A API de tracking, com DOIS validadores de JWT lado a lado:
+  #   /vulneravel/...  validador ingênuo, com as falhas clássicas
+  #   /correto/...     validador correto (assinatura, algoritmo, exp, aud e iss)
+  api:
+    build: ./api
+    environment:
+      ISSUER: http://localhost:8180/realms/lunalog
+      JWKS_URL: http://keycloak:8080/realms/lunalog/protocol/openid-connect/certs
+      AUDIENCE: tracking-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - keycloak
+
+  # O "atacante": scripts que forjam tokens e os enviam às duas versões da API.
+  atacante:
+    image: python:3.12-slim
+    profiles: ["ferramentas"]
+    working_dir: /atacante
+    volumes:
+      - ./atacante:/atacante:ro
+    environment:
+      KEYCLOAK: http://keycloak:8080
+      API: http://api:8000
+    depends_on:
+      - api

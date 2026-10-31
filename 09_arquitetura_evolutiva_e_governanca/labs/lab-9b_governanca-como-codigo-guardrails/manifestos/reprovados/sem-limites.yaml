@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracking
+  labels:
+    app: tracking
+    lunalog.io/dono: time-tracking
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: tracking }
+  template:
+    metadata:
+      labels: { app: tracking }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: lunalog/tracking:1.4.2
+        ports: [{ containerPort: 8000 }]
+        readinessProbe:
+          httpGet: { path: /saude, port: 8000 }

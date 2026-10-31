@@ -1,0 +1,78 @@
+# O MESMO sistema em duas versões, lado a lado:
+#   inseguro   como ele nasceu          API http://localhost:8701
+#   seguro     depois do redesign        API http://localhost:8702
+# Todas as credenciais e dados abaixo são fictícios, só deste laboratório.
+# Antes de subir a versão segura, gere o segredo do JWT:  bash scripts/preparar.sh
+x-api: &api
+  build: ./app
+  image: lunalog/stride-api:1.0
+  depends_on:
+    postgres: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin-lab
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # ---------- versão insegura ----------
+  api-inseguro:
+    <<: *api
+    environment:
+      MODO: inseguro
+      DATABASE_URL: postgresql://admin:admin-lab@postgres:5432/inseguro
+    ports: ["127.0.0.1:8701:8000"]   # só no seu computador: esta versão é vulnerável de propósito
+
+  notificacao-inseguro:
+    <<: *api
+    command: ["python", "-c", "exec(open('/notif/notificacao.py').read())"]
+    environment:
+      DATABASE_URL: postgresql://admin:admin-lab@postgres:5432/inseguro
+    volumes: ["./notificacao:/notif:ro"]
+
+  # ---------- versão redesenhada ----------
+  api-seguro:
+    <<: *api
+    environment:
+      MODO: seguro
+      JWT_SECRET: ${JWT_SECRET:?execute scripts/preparar.sh para gerar o segredo}
+      DATABASE_URL: postgresql://api_seg:api-seg-lab@postgres:5432/seguro
+    ports: ["127.0.0.1:8702:8000"]
+
+  notificacao-seguro:
+    <<: *api
+    command: ["python", "-c", "exec(open('/notif/notificacao.py').read())"]
+    environment:
+      DATABASE_URL: postgresql://notif_seg:notif-seg-lab@postgres:5432/seguro
+    volumes: ["./notificacao:/notif:ro"]
+
+  # ---------- ferramentas ----------
+  cliente:
+    build: ./scripts
+    image: lunalog/stride-cliente:1.0
+    profiles: ["ferramentas"]
+    working_dir: /scripts
+    environment:
+      INSEGURO: http://api-inseguro:8000
+      SEGURO: http://api-seguro:8000
+      NOTIF_DB_INSEGURO: postgresql://admin:admin-lab@postgres:5432/inseguro
+      NOTIF_DB_SEGURO: postgresql://notif_seg:notif-seg-lab@postgres:5432/seguro
+    volumes:
+      - ./scripts:/scripts:ro
+
+  modelo:
+    build: ./modelo
+    image: lunalog/stride-modelo:1.0
+    profiles: ["ferramentas"]
+    working_dir: /modelo
+    volumes:
+      - ./modelo:/modelo
+      - ./docs:/docs

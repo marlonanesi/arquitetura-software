@@ -1,0 +1,26 @@
+# A ANÁLISE DO CANARY: o critério objetivo de "esta versão está boa", como código.
+# O Argo Rollouts consulta o Prometheus enquanto o canary recebe tráfego real. Se o critério falhar,
+# o rollout é ABORTADO sozinho e o tráfego volta para a versão estável.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: taxa-de-erro
+  namespace: canario
+spec:
+  args:
+    - name: hash-do-canary           # preenchido pelo Rollout com o hash do pod template novo
+  metrics:
+    - name: taxa-de-erro-5xx
+      interval: 8s                   # mede a cada 8 segundos
+      count: 3                       # três medições bem-sucedidas = aprovado
+      failureLimit: 0                # uma única falha já reprova (rigoroso, para a aula)
+      initialDelay: 15s              # espera o canary receber tráfego e as métricas chegarem
+      # Critério: menos de 5% de respostas 5xx no canary. (O "or vector(0)" evita resultado vazio quando não há erro nenhum.)
+      successCondition: result[0] < 0.05
+      provider:
+        prometheus:
+          address: http://prometheus.canario.svc.cluster.local:9090   # o controlador roda em outro namespace: precisa do nome completo
+          query: |
+            (sum(rate(http_requests_total{pod_template_hash="{{args.hash-do-canary}}",status=~"5.."}[20s])) or vector(0))
+            /
+            sum(rate(http_requests_total{pod_template_hash="{{args.hash-do-canary}}"}[20s]))

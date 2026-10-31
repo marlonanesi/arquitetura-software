@@ -1,0 +1,15 @@
+# EXPERIMENTO 4: o raio de explosão grande demais. Mata TODOS os pods do frete protegido de uma vez.
+# Serve para mostrar a CONDIÇÃO DE ABORTAR: rode com ABORTAR=sim e o k6 interrompe o teste assim que o
+# alvo protegido viola a hipótese (erros >= 1%). O script então remove o experimento.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: e4-mata-todos-protegido
+  namespace: caos
+spec:
+  action: pod-kill
+  mode: all
+  gracePeriod: 0
+  selector:
+    namespaces: [caos]
+    labelSelectors: { app: frete-protegido }

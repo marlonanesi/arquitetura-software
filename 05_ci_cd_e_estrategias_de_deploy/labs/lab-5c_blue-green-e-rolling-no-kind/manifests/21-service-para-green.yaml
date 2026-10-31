@@ -1,0 +1,14 @@
+# A TROCA do blue/green: o Service passa a apontar para o green. Aplique este arquivo para trocar.
+# Para o ROLLBACK, aplique o 22-service-para-blue.yaml.
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bg
+  namespace: deploy
+spec:
+  type: NodePort
+  selector: { app: app-bg, cor: green }
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30081

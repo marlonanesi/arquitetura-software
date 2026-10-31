@@ -1,0 +1,16 @@
+# Cluster usado pelos labs da trilha Kubernetes: 1 control-plane e 2 workers.
+# O NodePort 30080 do cluster fica disponível em http://localhost:8080
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: lunalog-arq
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 30081
+        hostPort: 8081
+        protocol: TCP
+  - role: worker
+  - role: worker

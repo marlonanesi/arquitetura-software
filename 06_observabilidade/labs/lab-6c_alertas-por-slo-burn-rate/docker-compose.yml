@@ -1,0 +1,113 @@
+name: lab-6c-alertas-slo
+
+x-servico: &servico
+  build: ./app
+  environment: &env-servico
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    VIASUL_MS: "${VIASUL_MS:-300}"
+  depends_on:
+    - otel-collector
+
+services:
+  # --- Os quatro serviços da cotação (mesma stack dos labs 6A e 6B) ---
+  cotacao:
+    <<: *servico
+    environment:
+      <<: *env-servico
+      SERVICO: cotacao
+      URL_PROXIMO: http://rotas:8000
+    ports:
+      - "8000:8000"
+
+  rotas:
+    <<: *servico
+    environment:
+      <<: *env-servico
+      SERVICO: rotas
+      URL_PROXIMO: http://tarifas:8000
+
+  tarifas:
+    <<: *servico
+    environment:
+      <<: *env-servico
+      SERVICO: tarifas
+      URL_PROXIMO: http://transportadoras:8000
+
+  transportadoras:
+    <<: *servico
+    environment:
+      <<: *env-servico
+      SERVICO: transportadoras
+      # Só este serviço precisa da variável: assim "docker compose up -d" recria apenas ele.
+      ERRO_VIASUL_PCT: "${ERRO_VIASUL_PCT:-0}"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    command: ["--config=/etc/otelcol/collector.yaml"]
+    volumes:
+      - ./collector:/etc/otelcol:ro
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  # --- Prometheus agora também avalia regras (SLO e alertas) e envia os alertas ao Alertmanager ---
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=2h
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+      - alertmanager
+
+  # --- Novo neste lab: roteamento dos alertas por severidade ---
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    depends_on:
+      - receptor
+
+  # Simula os destinos das notificações (plantão e fila de tickets): só imprime o que recebe.
+  receptor:
+    build: ./receptor
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    environment:
+      # Só para o laboratório: acesso sem login.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/slo-cotacao.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # Gerador de carga. Use: docker compose run --rm k6 run /scripts/carga.js
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - cotacao

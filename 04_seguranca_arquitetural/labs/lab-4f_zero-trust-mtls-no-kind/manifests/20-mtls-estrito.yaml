@@ -1,0 +1,10 @@
+# mTLS ESTRITO: dentro do namespace "loja", só é aceita comunicação com TLS mútuo.
+# Quem não apresenta um certificado válido da malha (por exemplo, o "intruso") é recusado.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: padrao
+  namespace: loja
+spec:
+  mtls:
+    mode: STRICT

@@ -1,0 +1,15 @@
+# Regras de análise estática (SAST) usadas no laboratório. Ficam no repositório para o pipeline
+# ser reprodutível sem acesso a nenhum serviço externo. Em produção, combine regras próprias
+# com os conjuntos mantidos pela comunidade (por exemplo, "p/python" e "p/owasp-top-ten").
+rules:
+  - id: lunalog-uso-de-eval
+    languages: [python]
+    severity: ERROR
+    message: "eval() executa texto como código. Com entrada do usuário, permite execução remota de código."
+    pattern: eval(...)
+
+  - id: lunalog-subprocess-com-shell
+    languages: [python]
+    severity: ERROR
+    message: "subprocess com shell=True é vulnerável a injeção de comandos."
+    pattern: subprocess.$FUNC(..., shell=True, ...)

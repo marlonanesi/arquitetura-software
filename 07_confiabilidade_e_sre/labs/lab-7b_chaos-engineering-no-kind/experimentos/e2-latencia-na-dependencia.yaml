@@ -1,0 +1,21 @@
+# EXPERIMENTO 2: a transportadora fica lenta (2 s de latência de rede), por 30 s.
+# A latência vale para cada pacote que sai: conectar e responder somam vários segundos por chamada.
+# Hipótese: "se a dependência ficar lenta, o frete continua respondendo rápido (p95 < 800 ms)".
+# Lento é pior que fora do ar: o chamador fica preso esperando. O frágil espera até 5 s (e a maioria estoura o tempo); o protegido desiste em 0,5 s.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: e2-latencia-transportadora
+  namespace: caos
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: [caos]
+    labelSelectors: { app: transportadora }
+  delay:
+    latency: "2000ms"
+    jitter: "0ms"
+    correlation: "100"
+  direction: to
+  duration: "30s"

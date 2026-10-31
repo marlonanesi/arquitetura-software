@@ -1,0 +1,36 @@
+# PIPELINE COM PROBLEMAS (de propósito). Cada problema está comentado.
+# Para usar no GitHub: copie este arquivo para .github/workflows/ do seu fork.
+# Para ver a sequência rodando sem GitHub: bash scripts/simular.sh antes <mudanca>
+name: pipeline-com-problemas
+
+on: [push, pull_request]            # PROBLEMA 1: roda (e implanta!) até em pull request de qualquer pessoa
+
+env:
+  TOKEN_REGISTRY: ghp_token-de-exemplo-123456   # PROBLEMA 2: segredo escrito no arquivo, em vez de em "Secrets"
+
+jobs:
+  tudo:                             # PROBLEMA 3: um job gigante, sequencial, sem paralelismo nem isolamento
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master       # PROBLEMA 4: versão flutuante da action (pode mudar a qualquer momento)
+
+      - name: Build da imagem
+        env: { VERSAO: latest }             # PROBLEMA 5: tag "latest" não diz qual versão é, nem permite voltar atrás
+        run: bash scripts/etapas.sh construir
+
+      - name: Publicar a imagem             # PROBLEMA 6: publica ANTES de testar
+        env: { VERSAO: latest }
+        run: |
+          echo "login no registry com o token $TOKEN_REGISTRY"   # PROBLEMA 7: o segredo vai para o log
+          bash scripts/etapas.sh publicar
+
+      - name: Deploy em produção            # PROBLEMA 8: direto em produção, sem staging, sem aprovação,
+        env: { VERSAO: latest }             #             sem smoke test e sem rollback
+        run: bash scripts/etapas.sh deploy producao 8090
+
+      - name: Testes
+        run: bash scripts/etapas.sh testes || true   # PROBLEMA 9: a falha dos testes é ignorada (não há gate)
+
+      - name: Lint                          # PROBLEMA 10: feedback mais barato por último, e também ignorado
+        run: bash scripts/etapas.sh lint || true
+      # PROBLEMA 11: nenhuma etapa de segurança (segredos, SAST, dependências, imagem)

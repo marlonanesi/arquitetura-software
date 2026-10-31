@@ -1,0 +1,78 @@
+name: lab-7c-dr
+
+x-postgres: &postgres
+  image: lunalog/pg-dr:lab
+  environment: &pg-env
+    POSTGRES_USER: lunalog
+    POSTGRES_PASSWORD: lunalog-exemplo
+    POSTGRES_DB: lunalog
+
+services:
+  # O banco de produção. Arquiva cada segmento de WAL (o "diário" de tudo que foi gravado)
+  # em /arquivo, o que permite restaurar para qualquer ponto no tempo.
+  primary:
+    <<: *postgres
+    build: .
+    environment:
+      <<: *pg-env
+      # Segmentos de WAL de 1 MB, para o arquivamento ser rápido e leve no laboratório
+      POSTGRES_INITDB_ARGS: "--wal-segsize=1"
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /arquivo/%f && cp %p /arquivo/%f
+      - -c
+      - archive_timeout=10     # troca de segmento a cada 10 s, mesmo com pouca escrita
+      - -c
+      - max_wal_senders=5
+    volumes:
+      - pgdata-primary:/var/lib/postgresql/data
+      - arquivo-wal:/arquivo
+      - backups:/backups
+      - ./init:/docker-entrypoint-initdb.d:ro
+
+  # Réplica quente: segue o primário em tempo real (replicação assíncrona).
+  standby:
+    <<: *postgres
+    user: postgres
+    entrypoint: ["/scripts/standby.sh"]
+    volumes:
+      - pgdata-standby:/var/lib/postgresql/data
+      - ./scripts:/scripts:ro
+    depends_on:
+      - primary
+
+  # Gera escritas contínuas (uma entrega a cada 0,1 s) e registra cada confirmação do banco.
+  escritor:
+    <<: *postgres
+    entrypoint: ["/scripts/escritor.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+    depends_on:
+      - primary
+
+  # Banco restaurado a partir do backup base + WAL arquivado. Só sobe quando você manda.
+  restaurado:
+    <<: *postgres
+    profiles: ["restauracao"]
+    user: postgres
+    entrypoint: ["/scripts/restaurar.sh"]
+    environment:
+      <<: *pg-env
+      ALVO: "${ALVO:-}"   # instante alvo da restauração (vazio = reproduzir todo o WAL arquivado)
+    volumes:
+      - pgdata-restaurado:/var/lib/postgresql/data
+      - arquivo-wal:/arquivo:ro
+      - backups:/backups:ro
+      - ./scripts:/scripts:ro
+
+volumes:
+  pgdata-primary:
+  pgdata-standby:
+  pgdata-restaurado:
+  arquivo-wal:
+  backups:

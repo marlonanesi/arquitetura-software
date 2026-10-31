@@ -1,0 +1,124 @@
+name: lab-2b-eda
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=512M
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://redpanda:9092
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  console:
+    image: redpandadata/console:v2.7.2
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8088:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  topicos:
+    image: redpandadata/redpanda:v24.2.7
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        criar() {
+          rpk topic describe "$$1" --brokers redpanda:9092 > /dev/null 2>&1 \
+            || rpk topic create "$$1" -p "$$2" -r 1 --brokers redpanda:9092
+        }
+        criar entregas.eventos 3
+        criar entregas.eventos.dlq 1
+        criar demo.particoes 3
+    restart: "no"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lunalog
+      POSTGRES_PASSWORD: lunalog-exemplo
+      POSTGRES_DB: lunalog
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./sql:/sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lunalog -d lunalog"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Consumer sem proteção alguma: sem idempotência, sem checagem de ordem, sem DLQ.
+  ingenuo:
+    build: ./app
+    command: ["python", "consumidor.py"]
+    environment: &env-comum
+      MODO: ingenuo
+      GRUPO: ingenuo
+      PAPEL: estado
+      BROKERS: redpanda:9092
+      DATABASE_URL: postgresql://lunalog:lunalog-exemplo@postgres:5432/lunalog
+    depends_on:
+      topicos:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  # Consumer robusto que atualiza o estado da entrega.
+  robusto-estado:
+    build: ./app
+    command: ["python", "consumidor.py"]
+    environment:
+      <<: *env-comum
+      MODO: robusto
+      GRUPO: robusto-estado
+      PAPEL: estado
+      SUPORTA_DEVOLVIDA: "${SUPORTA_DEVOLVIDA:-0}"
+    depends_on:
+      topicos:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  # Segundo consumer robusto, de outra equipe: notifica o cliente. Mesmo evento, outro grupo.
+  robusto-notificacao:
+    build: ./app
+    command: ["python", "consumidor.py"]
+    environment:
+      <<: *env-comum
+      MODO: robusto
+      GRUPO: robusto-notificacao
+      PAPEL: notificacao
+      SUPORTA_DEVOLVIDA: "${SUPORTA_DEVOLVIDA:-0}"
+    depends_on:
+      topicos:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  # Produtor de cenários. Não sobe junto: use "docker compose run --rm produtor <cenario>".
+  produtor:
+    build: ./app
+    profiles: ["ferramentas"]
+    entrypoint: ["python", "produtor.py"]
+    environment:
+      BROKERS: redpanda:9092
+    depends_on:
+      topicos:
+        condition: service_completed_successfully

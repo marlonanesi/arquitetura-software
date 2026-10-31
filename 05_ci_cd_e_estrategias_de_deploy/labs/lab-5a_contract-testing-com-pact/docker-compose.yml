@@ -1,0 +1,51 @@
+name: lab-5a-pact
+
+services:
+  # --- Parte 2: Pact Broker, o lugar central onde os contratos e os resultados de verificação ficam ---
+  broker-db:
+    image: postgres:16-alpine
+    profiles: ["broker"]
+    environment:
+      POSTGRES_USER: pact
+      POSTGRES_PASSWORD: pact-exemplo
+      POSTGRES_DB: pact
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pact -d pact"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  broker:
+    image: pactfoundation/pact-broker:3.0.0-pactbroker2.121.2
+    profiles: ["broker"]
+    ports:
+      - "9292:9292"
+    environment:
+      PACT_BROKER_DATABASE_URL: postgres://pact:pact-exemplo@broker-db/pact
+      PACT_BROKER_LOG_LEVEL: WARN
+    depends_on:
+      broker-db:
+        condition: service_healthy
+
+  # --- Time do portal da transportadora (consumidor): escreve o teste que gera o contrato ---
+  consumer:
+    build: ./consumer
+    profiles: ["ferramentas"]
+    environment:
+      PACT_DIR: /pacts
+      PACT_BROKER_URL: http://broker:9292
+      CONSUMER_VERSION: "${CONSUMER_VERSION:-1.0.0}"
+    volumes:
+      - ./pacts:/pacts
+
+  # --- Time da tracking-api (provedor): verifica os contratos contra a API real ---
+  provider:
+    build: ./provider
+    profiles: ["ferramentas"]
+    environment:
+      PACT_DIR: /pacts
+      CONTRATO: "${CONTRATO:-original}"
+      PACT_BROKER_URL: http://broker:9292
+      PROVIDER_VERSION: "${PROVIDER_VERSION:-1.0.0}"
+    volumes:
+      - ./pacts:/pacts:ro

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cotacao
+  labels:
+    app: cotacao
+    lunalog.io/dono: time-cotacao
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: cotacao }
+  template:
+    metadata:
+      labels: { app: cotacao }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: lunalog/cotacao:1.4.2
+        ports: [{ containerPort: 8000 }]
+        resources:
+          limits: { cpu: 500m, memory: 256Mi }
+          requests: { cpu: 100m, memory: 128Mi }

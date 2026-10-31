@@ -1,0 +1,100 @@
+# PIPELINE MADURO. Cada decisão está comentada.
+# Para usar no GitHub: copie este arquivo para .github/workflows/ do seu fork.
+# Para ver a sequência rodando sem GitHub: bash scripts/simular.sh depois <mudanca>
+name: pipeline-maduro
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]               # uma tag vX.Y.Z dispara a versão que pode ir a produção
+  pull_request:                # em PR: só valida (qualidade e segurança), nunca implanta
+
+permissions:
+  contents: read               # menor privilégio: o token do pipeline só lê o repositório
+
+concurrency:                   # uma execução por branch: a nova cancela a antiga
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---- 1. Qualidade: feedback em segundos. Roda primeiro e em paralelo com a segurança ----
+  qualidade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4          # versão fixa (em ambientes críticos, fixe pelo SHA do commit)
+      - name: Lint
+        run: bash scripts/etapas.sh lint
+      - name: Testes com gate de cobertura (mínimo 80%)
+        run: bash scripts/etapas.sh testes
+
+  # ---- 2. Segurança: gates que BARRAM o pipeline (nada de "|| true") ----
+  seguranca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Segredos no código (gitleaks)
+        run: bash scripts/etapas.sh segredos
+      - name: SAST (semgrep)
+        run: bash scripts/etapas.sh sast
+      - name: SCA, dependências vulneráveis (trivy)
+        run: bash scripts/etapas.sh sca
+
+  # ---- 3. Build e publicação: só se qualidade E segurança passaram ----
+  construir:
+    needs: [qualidade, seguranca]
+    if: github.event_name == 'push'        # nunca em pull request
+    runs-on: ubuntu-latest
+    env:
+      # Tag imutável: a versão da tag Git (v1.2.3) ou, na main, o SHA do commit
+      VERSAO: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build da imagem
+        run: bash scripts/etapas.sh construir
+      - name: Scan da imagem (vulnerabilidades críticas)
+        run: bash scripts/etapas.sh scan_imagem
+      - name: Publicar
+        # O token do registry vem de "Secrets", nunca do arquivo. O GitHub o mascara nos logs.
+        env:
+          TOKEN_REGISTRY: ${{ secrets.TOKEN_REGISTRY }}
+        run: bash scripts/etapas.sh publicar
+
+  # ---- 4. Staging: implanta e verifica de verdade ----
+  staging:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      VERSAO: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir (simulação do pull da imagem publicada)
+        run: bash scripts/etapas.sh construir
+      - name: Deploy em staging
+        run: bash scripts/etapas.sh deploy staging 8091
+      - name: Smoke test
+        run: bash scripts/etapas.sh smoke 8091
+
+  # ---- 5. Produção: só tags, com aprovação humana, verificação e rollback automático ----
+  producao:
+    needs: staging
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production                # configure "Required reviewers" neste environment: é a aprovação manual
+    env:
+      VERSAO: ${{ github.ref_name }}
+      VERSAO_ANTERIOR: ${{ vars.VERSAO_ANTERIOR }}   # a última versão estável, guardada como variável do environment
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir (simulação do pull da imagem publicada)
+        run: bash scripts/etapas.sh construir
+      - name: Deploy em produção
+        run: bash scripts/etapas.sh deploy producao 8092
+      - name: Smoke test
+        id: smoke
+        run: bash scripts/etapas.sh smoke 8092
+      - name: Rollback automático se o smoke test falhar
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          VERSAO="$VERSAO_ANTERIOR" bash scripts/etapas.sh deploy producao 8092
+          VERSAO="$VERSAO_ANTERIOR" bash scripts/etapas.sh smoke 8092

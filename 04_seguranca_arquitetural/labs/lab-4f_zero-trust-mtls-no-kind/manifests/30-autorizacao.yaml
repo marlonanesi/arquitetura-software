@@ -1,0 +1,20 @@
+# AUTORIZAÇÃO por identidade: só a cobrança pode chamar o tracking.
+# A identidade vem do certificado do mTLS (SPIFFE), não de um IP nem de um header que o cliente possa forjar.
+# Quando existe ao menos uma política ALLOW para o alvo, tudo que ela não permite é NEGADO.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: tracking-so-para-cobranca
+  namespace: loja
+spec:
+  selector:
+    matchLabels:
+      app: tracking
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/loja/sa/cobranca"]
+      to:
+        - operation:
+            methods: ["GET"]

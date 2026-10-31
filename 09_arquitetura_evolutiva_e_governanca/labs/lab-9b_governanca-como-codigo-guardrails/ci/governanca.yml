@@ -1,0 +1,41 @@
+# Guardrails de governança como pipeline de pull request. Copie para .github/workflows/ do seu repositório.
+name: governanca
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ADRs
+        run: python scripts/verificar_adrs.py adrs --sem-indice
+
+      - name: CODEOWNERS
+        run: python scripts/verificar_codeowners.py CODEOWNERS
+
+      - name: Checklist arquitetural do pull request
+        env:
+          CORPO_DO_PR: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$CORPO_DO_PR" > corpo-do-pr.md
+          python scripts/verificar_pr.py corpo-do-pr.md
+
+      - name: Instalar o Conftest
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_Linux_x86_64.tar.gz | tar xz conftest
+          sudo mv conftest /usr/local/bin/
+
+      - name: Testes das políticas
+        run: conftest verify -p politicas
+
+      - name: Manifests do Kubernetes
+        run: conftest test manifestos/aprovados manifestos/novo -p politicas --namespace lunalog.k8s --data excecoes
+
+      - name: Dockerfiles
+        run: conftest test dockerfiles/aprovado/Dockerfile -p politicas --namespace lunalog.dockerfile

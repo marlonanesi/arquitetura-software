@@ -1,0 +1,83 @@
+# SLO da cotação: 99% das requisições terminam sem erro 5xx.
+# Orçamento de erro = 1% (0,01). "Burn rate" = quantas vezes mais rápido que o permitido o orçamento está sendo gasto.
+#   burn rate 1  -> gastando exatamente no ritmo que esgota o orçamento no fim da janela do SLO
+#   burn rate 10 -> esgotando 10 vezes mais rápido
+#
+# ATENÇÃO: as janelas abaixo foram REDUZIDAS para caber numa aula (segundos e minutos).
+# Em produção, o SLO é medido em 30 dias e as janelas típicas são 1h/5m (queima rápida) e 6h/30m (queima lenta).
+groups:
+  - name: sli-cotacao
+    interval: 5s
+    rules:
+      # SLI: proporção de erros da cotação em várias janelas.
+      - record: slo:cotacao_erro_ratio:rate30s
+        expr: |
+          (sum(rate(http_server_duration_milliseconds_count{job="cotacao",http_status_code=~"5.."}[30s])) or vector(0))
+          / sum(rate(http_server_duration_milliseconds_count{job="cotacao"}[30s]))
+      - record: slo:cotacao_erro_ratio:rate2m
+        expr: |
+          (sum(rate(http_server_duration_milliseconds_count{job="cotacao",http_status_code=~"5.."}[2m])) or vector(0))
+          / sum(rate(http_server_duration_milliseconds_count{job="cotacao"}[2m]))
+      - record: slo:cotacao_erro_ratio:rate10m
+        expr: |
+          (sum(rate(http_server_duration_milliseconds_count{job="cotacao",http_status_code=~"5.."}[10m])) or vector(0))
+          / sum(rate(http_server_duration_milliseconds_count{job="cotacao"}[10m]))
+      # Janela do SLO (reduzida: 15 minutos no lugar de 30 dias) e orçamento restante.
+      - record: slo:cotacao_erro_ratio:rate15m
+        expr: |
+          (sum(rate(http_server_duration_milliseconds_count{job="cotacao",http_status_code=~"5.."}[15m])) or vector(0))
+          / sum(rate(http_server_duration_milliseconds_count{job="cotacao"}[15m]))
+      - record: slo:cotacao_orcamento_restante:ratio
+        expr: 1 - (slo:cotacao_erro_ratio:rate15m / 0.01)
+
+  - name: alertas-slo
+    rules:
+      # QUEIMA RÁPIDA: o orçamento está acabando agora. Acorda alguém.
+      # Duas janelas: a longa confirma que não é um pico isolado; a curta confirma que ainda está acontecendo.
+      - alert: SLOQueimaRapida
+        expr: |
+          slo:cotacao_erro_ratio:rate2m > (10 * 0.01)
+          and
+          slo:cotacao_erro_ratio:rate30s > (10 * 0.01)
+        for: 30s
+        labels:
+          severity: page
+        annotations:
+          resumo: "Cotação queimando o orçamento de erro 10x mais rápido que o permitido"
+          acao: "Investigar agora. O SLO de 99% está em risco."
+
+      # QUEIMA LENTA: um vazamento constante. Não acorda ninguém, vira trabalho do dia seguinte.
+      - alert: SLOQueimaLenta
+        expr: |
+          slo:cotacao_erro_ratio:rate10m > (2 * 0.01)
+          and
+          slo:cotacao_erro_ratio:rate2m > (2 * 0.01)
+        for: 1m
+        labels:
+          severity: ticket
+        annotations:
+          resumo: "Cotação gastando o orçamento de erro 2x mais rápido que o permitido"
+          acao: "Abrir ticket para investigar no próximo dia útil."
+
+      # POLÍTICA DE ERROR BUDGET: orçamento quase esgotado -> congelar entregas de risco.
+      - alert: OrcamentoDeErroBaixo
+        expr: slo:cotacao_orcamento_restante:ratio < 0.25
+        for: 30s
+        labels:
+          severity: ticket
+        annotations:
+          resumo: "Resta menos de 25% do orçamento de erro da cotação"
+          acao: "Congelar deploys de funcionalidades. Priorizar estabilidade até recuperar o orçamento."
+
+  # O ANTIPADRÃO, para comparar: alerta por causa, um por serviço, com limite baixo.
+  - name: alertas-por-causa-antipadrao
+    rules:
+      - alert: ErroEmServico
+        expr: |
+          sum(rate(http_server_duration_milliseconds_count{http_status_code=~"5.."}[1m])) by (job)
+          / sum(rate(http_server_duration_milliseconds_count[1m])) by (job) > 0.005
+        for: 10s
+        labels:
+          severity: causa
+        annotations:
+          resumo: "Mais de 0,5% de erro no serviço {{ $labels.job }}"

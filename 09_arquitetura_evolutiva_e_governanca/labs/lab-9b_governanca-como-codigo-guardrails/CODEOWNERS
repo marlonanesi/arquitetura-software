@@ -1,0 +1,16 @@
+# Quem revisa o quê. O GitHub pede a revisão destas pessoas ou times automaticamente em cada pull request
+# que toque no caminho. As áreas críticas (decisões, políticas e exceções) exigem DOIS responsáveis.
+#
+# Padrão                      Responsáveis
+/adrs/                        @lunalog/arquitetura @roberto
+/politicas/                   @lunalog/arquitetura @camila
+/excecoes/                    @lunalog/arquitetura @camila
+/manifestos/                  @lunalog/plataforma
+/dockerfiles/                 @lunalog/plataforma
+/scripts/                     @lunalog/plataforma
+/ci/                          @lunalog/plataforma @lunalog/arquitetura
+/modelos/                     @lunalog/arquitetura
+/exemplos-invalidos/          @lunalog/arquitetura
+/exemplos-pr/                 @lunalog/arquitetura
+/CODEOWNERS                   @lunalog/arquitetura @roberto
+*.md                          @lunalog/arquitetura

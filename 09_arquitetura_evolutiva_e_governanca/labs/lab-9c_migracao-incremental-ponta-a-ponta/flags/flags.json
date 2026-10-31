@@ -1,0 +1,25 @@
+{
+  "$schema": "https://flagd.dev/schema/v0/flags.json",
+  "flags": {
+    "kill-switch-novo": {
+      "state": "ENABLED",
+      "variants": { "ligado": true, "desligado": false },
+      "defaultVariant": "desligado"
+    },
+    "sombra": {
+      "state": "ENABLED",
+      "variants": { "ligada": true, "desligada": false },
+      "defaultVariant": "desligada"
+    },
+    "leitura-novo": {
+      "state": "ENABLED",
+      "variants": { "novo": true, "legado": false },
+      "defaultVariant": "legado"
+    },
+    "escrita": {
+      "state": "ENABLED",
+      "variants": { "legado": "legado", "dupla": "dupla", "novo": "novo" },
+      "defaultVariant": "legado"
+    }
+  }
+}

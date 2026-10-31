@@ -1,0 +1,47 @@
+name: lab-3f-resiliencia
+
+services:
+  # Dependências externas simuladas (a API de mapas e o serviço de notificação).
+  mapas:
+    build: ./dependencias
+    environment:
+      NOME: mapas
+      LATENCIA_MS: "40"
+
+  notificacao:
+    build: ./dependencias
+    environment:
+      NOME: notificacao
+      LATENCIA_MS: "30"
+
+  # Toxiproxy fica entre o serviço e as dependências e injeta falhas em tempo real.
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ./toxiproxy/toxiproxy.json:/config/toxiproxy.json:ro
+    ports:
+      - "8474:8474"   # API de controle do Toxiproxy
+    depends_on:
+      - mapas
+      - notificacao
+
+  cotacao:
+    build: ./cotacao
+    ports:
+      - "8000:8000"
+    environment:
+      URL_MAPAS: http://toxiproxy:9001
+      URL_NOTIFICACAO: http://toxiproxy:9002
+      THREADS: "30"     # capacidade do serviço: quantas requisições processa ao mesmo tempo
+    depends_on:
+      - toxiproxy
+
+  # Gerador de carga. Não sobe junto: use "docker compose run --rm k6 run ...".
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - cotacao

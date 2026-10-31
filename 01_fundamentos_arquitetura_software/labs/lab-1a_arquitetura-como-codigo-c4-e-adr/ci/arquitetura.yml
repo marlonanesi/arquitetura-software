@@ -1,0 +1,22 @@
+# Exemplo de pipeline para a revisão de arquitetura por pull request.
+# Copie para .github/workflows/ do seu repositório (ajuste o working-directory para a pasta do modelo).
+name: arquitetura
+on:
+  pull_request:
+    paths: ["workspace.dsl", "adrs/**", "docs/**", "diagramas/**"]
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Valida modelo, ADRs e gera diagramas
+        run: bash scripts/verificar.sh
+      - name: Os diagramas e o índice commitados estão atualizados?
+        run: git diff --exit-code -- diagramas INDICE_ADRS.md

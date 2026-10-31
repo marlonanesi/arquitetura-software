@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comprovantes
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: comprovantes
+  template:
+    metadata:
+      labels:
+        app: comprovantes
+    spec:
+      containers:
+        - name: comprovantes
+          image: lunalog/comprovantes:1.0.0
+          imagePullPolicy: IfNotPresent   # a imagem é carregada no Kind com "kind load"
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: comprovantes-config
+            - secretRef:
+                name: comprovantes-segredos
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 192Mi }
+          # Dá tempo para o pod sair dos endpoints do Service antes de receber o SIGTERM.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          # Liveness: "o processo está travado?" Se falhar, o kubelet REINICIA o contêiner.
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8000 }
+            periodSeconds: 5
+            failureThreshold: 3
+          # Readiness: "posso receber tráfego?" Se falhar, o pod SAI do Service, sem reinício.
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8000 }
+            periodSeconds: 2
+            failureThreshold: 1

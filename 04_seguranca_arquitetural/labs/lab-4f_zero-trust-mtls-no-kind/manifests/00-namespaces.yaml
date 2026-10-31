@@ -1,0 +1,11 @@
+# "loja": os serviços da LunaLog. "fora-da-malha": um namespace SEM malha, para representar
+# qualquer carga de trabalho que não faz parte do mesh (um pod comprometido, uma ferramenta esquecida).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: loja
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fora-da-malha

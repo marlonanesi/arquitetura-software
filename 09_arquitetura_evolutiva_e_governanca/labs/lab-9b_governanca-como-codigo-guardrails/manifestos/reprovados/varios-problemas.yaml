@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: legado-antigo
+  labels:
+    app: legado-antigo
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: legado-antigo }
+  template:
+    metadata:
+      labels: { app: legado-antigo }
+    spec:
+      containers:
+      - name: app
+        image: lunalog/legado-antigo:latest
+        ports: [{ containerPort: 8000 }]

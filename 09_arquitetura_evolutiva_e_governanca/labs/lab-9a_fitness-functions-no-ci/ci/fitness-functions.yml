@@ -1,0 +1,42 @@
+# As fitness functions como um workflow do GitHub Actions: roda em todo pull request e bloqueia o merge
+# se qualquer uma falhar (marque os quatro jobs como "required checks" na proteção da branch main).
+# Para usar: copie este arquivo para .github/workflows/ do seu repositório.
+# Localmente, sem GitHub: bash scripts/simular.sh [acoplamento|desempenho|seguranca|compatibilidade]
+name: fitness-functions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fitness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  acoplamento:                   # as regras de dependência entre camadas e módulos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/fitness.sh acoplamento
+
+  desempenho:                    # o orçamento de latência
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/fitness.sh desempenho
+
+  seguranca:                     # segredos e dependências vulneráveis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/fitness.sh seguranca
+
+  compatibilidade:               # a API não quebra quem a consome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/fitness.sh compatibilidade

@@ -1,0 +1,64 @@
+# Duas implementações do MESMO domínio (entregas, rotas, notificações):
+#   modular     : 1 aplicação, 3 módulos com fronteiras, 1 transação        -> http://localhost:8201
+#   distribuído : 3 serviços em cadeia síncrona sobre o mesmo banco          -> http://localhost:8202
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d distribuido"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # ----- variante 1: monólito modular -----
+  monolito:
+    build: ./modular
+    image: lunalog/monolito-modular:1.0
+    environment:
+      SCHEMA_VERSAO: "${SCHEMA_VERSAO:-1}"
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8201:8000"]
+
+  # ----- variante 2: monólito distribuído (3 serviços, 1 banco) -----
+  entregas:
+    build: ./distribuido
+    image: lunalog/monolito-distribuido:1.0
+    environment:
+      SERVICO: entregas
+      SCHEMA_VERSAO: "${SCHEMA_VERSAO_ENTREGAS:-1}"
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8202:8000"]
+
+  roteirizacao:
+    build: ./distribuido
+    image: lunalog/monolito-distribuido:1.0
+    environment:
+      SERVICO: roteirizacao
+      SCHEMA_VERSAO: "${SCHEMA_VERSAO_ROTEIRIZACAO:-1}"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  notificacao:
+    build: ./distribuido
+    image: lunalog/monolito-distribuido:1.0
+    environment:
+      SERVICO: notificacao
+      SCHEMA_VERSAO: "${SCHEMA_VERSAO_NOTIFICACAO:-1}"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # ----- medição (perfil "ferramentas", roda sob demanda) -----
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    command: ["run", "/scripts/comparar.js"]
+    depends_on: [monolito, entregas]

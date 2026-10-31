@@ -1,0 +1,66 @@
+# BLUE/GREEN: dois ambientes completos, lado a lado. O Service aponta para um deles (selector).
+# "Trocar de versão" é mudar o selector do Service: instantâneo, e a volta também.
+# O custo: o dobro de réplicas rodando enquanto os dois existirem.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  namespace: deploy
+spec:
+  replicas: 4
+  selector:
+    matchLabels: { app: app-bg, cor: blue }
+  template:
+    metadata:
+      labels: { app: app-bg, cor: blue }
+    spec:
+      containers:
+        - name: app
+          image: lunalog/versionado:1.0.0      # versão atual, em produção
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8000 }]
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+            limits: { memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /saude, port: 8000 }
+            periodSeconds: 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  namespace: deploy
+spec:
+  replicas: 4
+  selector:
+    matchLabels: { app: app-bg, cor: green }
+  template:
+    metadata:
+      labels: { app: app-bg, cor: green }
+    spec:
+      containers:
+        - name: app
+          image: lunalog/versionado:2.0.0      # versão nova, pronta e aguardando, SEM receber tráfego
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8000 }]
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+            limits: { memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /saude, port: 8000 }
+            periodSeconds: 2
+---
+# O Service começa apontando para o blue.
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bg
+  namespace: deploy
+spec:
+  type: NodePort
+  selector: { app: app-bg, cor: blue }
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30081

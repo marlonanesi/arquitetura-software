@@ -1,0 +1,14 @@
+# EXPERIMENTO 3: a transportadora sai do ar (todos os pods falham), por 25 s.
+# Hipótese: "sem a transportadora, o frete segue atendendo (erros < 1%)", ainda que com resposta degradada.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: e3-transportadora-fora
+  namespace: caos
+spec:
+  action: pod-failure
+  mode: all
+  selector:
+    namespaces: [caos]
+    labelSelectors: { app: transportadora }
+  duration: "25s"

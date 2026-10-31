@@ -1,0 +1,16 @@
+# Mesma versão stateless, mas SEM readiness e liveness: para ver o que as probes evitam.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../stateless
+
+patches:
+  - target:
+      kind: Deployment
+      name: comprovantes
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/readinessProbe
+      - op: remove
+        path: /spec/template/spec/containers/0/livenessProbe

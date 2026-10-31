@@ -1,0 +1,26 @@
+# Tráfego de estado estacionário durante o experimento, como Job dentro do cluster.
+# Pré-requisito (uma vez): kubectl -n caos create configmap k6-scripts --from-file=k6/
+# Para repetir: kubectl -n caos delete job experimento
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: experimento
+  namespace: caos
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 900
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:0.54.0
+          args: ["run", "/scripts/experimento.js"]
+          env:
+            - { name: TAXA, value: "20" }
+            - { name: DURACAO, value: "60s" }
+            - { name: ABORTAR, value: "nao" }
+          volumeMounts: [{ name: scripts, mountPath: /scripts }]
+      volumes:
+        - name: scripts
+          configMap: { name: k6-scripts }

@@ -1,0 +1,16 @@
+# Versão corrigida: a MESMA imagem, com o estado externalizado no Redis.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lunalog
+
+resources:
+  - ../../base
+
+configMapGenerator:
+  - name: comprovantes-config
+    literals:
+      - ARMAZENAMENTO=redis
+      - REDIS_URL=redis://redis:6379/0
+      - WARMUP_SEGUNDOS=20
+      - BANNER=versao stateless

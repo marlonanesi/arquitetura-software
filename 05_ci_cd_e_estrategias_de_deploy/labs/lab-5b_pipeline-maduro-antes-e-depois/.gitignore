@@ -1,0 +1,3 @@
+.simulacao/
+.coverage
+.pytest_cache/

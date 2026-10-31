@@ -1,0 +1,14 @@
+{
+  "name": "portal-transportadora",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Consumidor: portal da transportadora, que consulta a API de tracking",
+  "scripts": {
+    "test": "node --test test/",
+    "publicar": "node scripts/publicar.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@pact-foundation/pact": "13.2.0"
+  }
+}

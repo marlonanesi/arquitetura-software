@@ -1,0 +1,81 @@
+name: lunalog
+
+# ReBAC: quem pode ver o quê é DERIVADO de relacionamentos (quem gerencia a transportadora,
+# a que filial a rota pertence, quem é o motorista). A estrutura da organização vira dado (tuplas),
+# e não código.
+model: |
+  model
+    schema 1.1
+
+  type usuario
+
+  type plataforma
+    relations
+      define auditor: [usuario]
+
+  type transportadora
+    relations
+      define gerente: [usuario]
+
+  type filial
+    relations
+      define transportadora: [transportadora]
+      define operador: [usuario]
+      define viewer: operador or gerente from transportadora
+
+  type rota
+    relations
+      define plataforma: [plataforma]
+      define filial: [filial]
+      define motorista: [usuario]
+      define viewer: motorista or viewer from filial or auditor from plataforma
+
+  type entrega
+    relations
+      define rota: [rota]
+      define viewer: viewer from rota
+
+tuples:
+  # a plataforma e seus auditores
+  - { user: usuario:eva, relation: auditor, object: plataforma:lunalog }
+  # transportadoras e gerentes
+  - { user: usuario:dora, relation: gerente, object: transportadora:rapido }
+  - { user: usuario:gil, relation: gerente, object: transportadora:veloz }
+  # filiais
+  - { user: transportadora:rapido, relation: transportadora, object: filial:rapido-sp }
+  - { user: transportadora:rapido, relation: transportadora, object: filial:rapido-rj }
+  - { user: transportadora:veloz, relation: transportadora, object: filial:veloz-sp }
+  - { user: usuario:ana, relation: operador, object: filial:rapido-sp }
+  # rotas
+  - { user: plataforma:lunalog, relation: plataforma, object: rota:R1 }
+  - { user: filial:rapido-sp, relation: filial, object: rota:R1 }
+  - { user: usuario:bruno, relation: motorista, object: rota:R1 }
+  - { user: plataforma:lunalog, relation: plataforma, object: rota:R2 }
+  - { user: filial:rapido-rj, relation: filial, object: rota:R2 }
+  - { user: usuario:fabio, relation: motorista, object: rota:R2 }
+  - { user: plataforma:lunalog, relation: plataforma, object: rota:R3 }
+  - { user: filial:veloz-sp, relation: filial, object: rota:R3 }
+  - { user: usuario:carla, relation: motorista, object: rota:R3 }
+  # entregas (cada uma pertence a uma rota)
+  - { user: rota:R1, relation: rota, object: entrega:E1 }
+  - { user: rota:R2, relation: rota, object: entrega:E2 }
+  - { user: rota:R3, relation: rota, object: entrega:E3 }
+
+# Testes do modelo, executados por "fga model test" (também entram no CI).
+tests:
+  - name: regras-de-visualizacao
+    check:
+      - { user: usuario:bruno, object: rota:R1, assertions: { viewer: true } }
+      - { user: usuario:bruno, object: rota:R3, assertions: { viewer: false } }
+      - { user: usuario:ana, object: rota:R1, assertions: { viewer: true } }
+      - { user: usuario:ana, object: rota:R2, assertions: { viewer: false } }
+      - { user: usuario:dora, object: rota:R2, assertions: { viewer: true } }
+      - { user: usuario:dora, object: rota:R3, assertions: { viewer: false } }
+      - { user: usuario:eva, object: rota:R3, assertions: { viewer: true } }
+      - { user: usuario:bruno, object: entrega:E1, assertions: { viewer: true } }
+      - { user: usuario:bruno, object: entrega:E3, assertions: { viewer: false } }
+    list_objects:
+      - user: usuario:dora
+        type: rota
+        assertions:
+          viewer: [rota:R1, rota:R2]

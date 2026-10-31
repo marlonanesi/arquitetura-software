@@ -1,0 +1,205 @@
+{
+  "realm": "lunalog",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 60,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      {
+        "name": "operador",
+        "description": "Opera entregas"
+      },
+      {
+        "name": "admin",
+        "description": "Administra a plataforma"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "ana",
+      "enabled": true,
+      "email": "ana@lunalog.example",
+      "emailVerified": true,
+      "firstName": "Ana",
+      "lastName": "Ferreira",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ana-exemplo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operador"
+      ]
+    },
+    {
+      "username": "roberto",
+      "enabled": true,
+      "email": "roberto@lunalog.example",
+      "emailVerified": true,
+      "firstName": "Roberto",
+      "lastName": "Campos",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "roberto-exemplo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
+    },
+    {
+      "username": "carla",
+      "enabled": true,
+      "email": "carla@lunalog.example",
+      "emailVerified": true,
+      "firstName": "Carla",
+      "lastName": "Souza",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "carla-exemplo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operador"
+      ],
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "tracking-api",
+      "name": "API de tracking",
+      "enabled": true,
+      "bearerOnly": true
+    },
+    {
+      "clientId": "portal",
+      "name": "Portal da transportadora (aplicação de navegador, cliente público)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3001/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3001/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-tracking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "tracking-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "painel",
+      "name": "Painel de operações (outra aplicação, mesmo login único)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3002"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3002/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-tracking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "tracking-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "cobranca",
+      "name": "Serviço de cobrança (serviço a serviço, client credentials)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "cobranca-segredo-de-exemplo",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocolMappers": [
+        {
+          "name": "audience-tracking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "tracking-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "relatorios",
+      "name": "Serviço de relatórios (NÃO deve acessar a API de tracking)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "relatorios-segredo-de-exemplo",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "cli-teste",
+      "name": "Cliente de linha de comando, só para os scripts do laboratório (usa password grant, removido no OAuth 2.1)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "audience-tracking-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "tracking-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

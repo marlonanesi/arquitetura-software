@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificacao
+  labels:
+    app: notificacao
+    lunalog.io/dono: time-notificacao
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: notificacao }
+  template:
+    metadata:
+      labels: { app: notificacao }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: lunalog/notificacao:latest
+        ports: [{ containerPort: 8000 }]
+        resources:
+          limits: { cpu: 500m, memory: 256Mi }
+          requests: { cpu: 100m, memory: 128Mi }
+        readinessProbe:
+          httpGet: { path: /saude, port: 8000 }

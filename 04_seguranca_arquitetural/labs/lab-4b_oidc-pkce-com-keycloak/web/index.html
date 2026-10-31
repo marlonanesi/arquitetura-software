@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab 4B - OIDC com PKCE</title>
+  <style>
+    :root { --fundo: #f6f7f9; --texto: #1c2430; --suave: #5b6675; --card: #ffffff; --borda: #d9dee6; --destaque: #1f5fbf; --ok: #167a3e; --erro: #b3261e; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fundo: #14181f; --texto: #e6eaf0; --suave: #9aa6b6; --card: #1c222c; --borda: #2d3644; --destaque: #6aa5ff; --ok: #4cc27f; --erro: #ff8a80; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--fundo); color: var(--texto); }
+    main { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: var(--suave); margin: 0 0 20px; }
+    .card { background: var(--card); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; margin: 0 0 16px; }
+    .card h2 { font-size: 16px; margin: 0 0 8px; }
+    button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--destaque); background: var(--destaque); color: #fff; cursor: pointer; margin: 4px 8px 4px 0; }
+    button.sec { background: transparent; color: var(--destaque); }
+    button:disabled { opacity: .5; cursor: default; }
+    pre { background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; margin: 8px 0 0; }
+    .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--borda); color: var(--suave); }
+    .ok { color: var(--ok); } .erro { color: var(--erro); }
+    code { font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1 id="titulo">Login com OpenID Connect</h1>
+  <p class="sub">Authorization Code com PKCE, passo a passo. Cada valor que trafega fica visível na página.</p>
+
+  <div id="inicio" class="card">
+    <h2>Você não está autenticado neste aplicativo</h2>
+    <p>Clique para começar. Antes de ir ao Keycloak, o aplicativo gera os valores do PKCE e mostra a URL de autorização.</p>
+    <button id="btn-preparar">1. Preparar o login (PKCE)</button>
+    <div id="preparo" hidden>
+      <pre id="preparo-detalhe"></pre>
+      <button id="btn-ir">2. Continuar para o Keycloak</button>
+    </div>
+  </div>
+
+  <div id="callback" class="card" hidden>
+    <h2>Voltamos do Keycloak com um código</h2>
+    <pre id="callback-detalhe"></pre>
+    <p>O <code>code</code> sozinho não vale nada: só serve para ser trocado por tokens, e a troca exige o <code>code_verifier</code> que só este navegador conhece.</p>
+    <button id="btn-trocar">3. Trocar o code por tokens (com code_verifier)</button>
+    <button id="btn-atacar" class="sec">Simular um atacante que roubou o code (sem o code_verifier; invalida o code)</button>
+    <pre id="troca-resultado" hidden></pre>
+  </div>
+
+  <div id="tokens" class="card" hidden>
+    <h2>Autenticado: <span id="usuario"></span> <span class="tag" id="app-tag"></span></h2>
+    <p>O access token expira em <b id="expira">-</b> s.</p>
+    <p><b>ID token</b> (quem é o usuário, para o aplicativo)</p><pre id="id-token"></pre>
+    <p><b>Access token</b> (o que a API aceita, para chamar APIs)</p><pre id="access-token"></pre>
+    <p><b>Refresh token</b> (para renovar o access token; deve ser tratado como segredo)</p><pre id="refresh-token"></pre>
+    <button id="btn-sair" class="sec">Sair</button>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

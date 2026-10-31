@@ -1,0 +1,66 @@
+# HashiCorp Vault em modo dev (memória, sem unseal): só para laboratório.
+#   Interface do Vault   http://localhost:8200/ui     (token raiz do lab: root-lab)
+#   PostgreSQL           interno (usuário administrador do lab: admin / admin-lab)
+# Todas as credenciais abaixo são fictícias e existem só neste laboratório.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin-lab
+      POSTGRES_DB: loja
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d loja"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  vault:
+    image: hashicorp/vault:1.17
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root-lab
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add: [IPC_LOCK]
+    ports: ["8200:8200"]
+    volumes:
+      - vault-logs:/vault/logs
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Configura o Vault (motores, chave, política, token da aplicação) e termina.
+  setup:
+    image: hashicorp/vault:1.17
+    depends_on:
+      vault: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: root-lab
+    volumes:
+      - ./vault:/vault-setup:ro
+    entrypoint: ["sh", "/vault-setup/setup.sh"]
+    restart: "no"
+
+  lab:
+    build: ./lab
+    image: lunalog/vault-lab:1.0
+    profiles: ["ferramentas"]
+    environment:
+      VAULT_ADDR: http://vault:8200
+      ROOT_TOKEN: root-lab
+      APP_TOKEN: app-lab-token
+      DATABASE_ADMIN_URL: postgresql://admin:admin-lab@postgres:5432/loja
+      DATABASE_HOST: postgres
+    volumes:
+      - ./lab:/lab:ro
+      - vault-logs:/vault/logs:ro
+    depends_on:
+      setup: { condition: service_completed_successfully }
+
+volumes:
+  vault-logs:

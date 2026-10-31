@@ -1,0 +1,83 @@
+# Migração incremental ponta a ponta: estrangulador + flags + dados + critérios de rollback.
+#   gateway (único endereço dos clientes)   http://localhost:9501
+#   flagd (avaliador de flags, OpenFeature)  interno
+# As ferramentas (operar flags, dados, carga, painel) rodam no contêiner "ferramentas".
+x-app: &app
+  build: ./app
+  image: lunalog/migracao-ponta-a-ponta:1.0
+  depends_on:
+    postgres: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d legado"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Coloca o arquivo inicial de flags no volume (só se ainda não existir) e termina.
+  flags-init:
+    image: alpine:3.20
+    command: ["sh", "-c", "cp -n /origem/flags.json /flags/flags.json && echo flags iniciais prontas"]
+    volumes:
+      - ./flags:/origem:ro
+      - flags:/flags
+    restart: "no"
+
+  flagd:
+    image: ghcr.io/open-feature/flagd:latest
+    command: ["start", "--uri", "file:/etc/flagd/flags.json"]
+    volumes:
+      - flags:/etc/flagd
+    depends_on:
+      flags-init: { condition: service_completed_successfully }
+
+  legado:
+    <<: *app
+    environment: { MODULO: legado }
+
+  novo:
+    <<: *app
+    environment: { MODULO: novo }
+
+  gateway:
+    <<: *app
+    environment: { MODULO: gateway }
+    depends_on:
+      postgres: { condition: service_healthy }
+      flagd: { condition: service_started }
+      legado: { condition: service_started }
+      novo: { condition: service_started }
+    ports: ["9501:8000"]
+
+  # O guardião (critério de rollback automático). Fica desligado até você ligá-lo: docker compose up -d guardiao
+  guardiao:
+    <<: *app
+    profiles: ["guardiao"]
+    command: ["python", "-u", "/scripts/guardiao.py"]
+    working_dir: /scripts
+    environment: { PYTHONPATH: /scripts }
+    volumes:
+      - ./scripts:/scripts:ro
+      - flags:/flags
+    depends_on: [gateway]
+
+  ferramentas:
+    <<: *app
+    profiles: ["ferramentas"]
+    working_dir: /scripts
+    environment: { PYTHONPATH: /scripts }
+    volumes:
+      - ./scripts:/scripts:ro
+      - flags:/flags
+    depends_on: [gateway]
+
+volumes:
+  flags:

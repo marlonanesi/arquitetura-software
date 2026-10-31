@@ -1,0 +1,25 @@
+# Tráfego contínuo, como Job dentro do cluster.
+# Pré-requisito (uma vez): kubectl -n canario create configmap k6-scripts --from-file=k6/
+# Para repetir: kubectl -n canario delete job trafego
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trafego
+  namespace: canario
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 900
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:0.54.0
+          args: ["run", "/scripts/trafego.js"]
+          env:
+            - { name: TAXA, value: "40" }
+            - { name: DURACAO, value: "150s" }
+          volumeMounts: [{ name: scripts, mountPath: /scripts }]
+      volumes:
+        - name: scripts
+          configMap: { name: k6-scripts }

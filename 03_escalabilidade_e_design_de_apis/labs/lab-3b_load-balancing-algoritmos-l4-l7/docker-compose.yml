@@ -1,0 +1,36 @@
+# HAProxy com 7 "balanceadores" (portas 8301 a 8307) na frente de 3 instâncias de capacidades diferentes.
+#   8301 round-robin   8302 least connections   8303 IP hash   8304 pesos
+#   8305 cookie (afinidade)   8306 L4 (TCP)   8307 L7 (caminho e header)   8399 painel
+x-app: &app
+  build: ./app
+  image: lunalog/lb-app:1.0
+
+services:
+  app-a:
+    <<: *app
+    environment: { NOME: a, ATRASO_MS: "10" }
+  app-b:
+    <<: *app
+    environment: { NOME: b, ATRASO_MS: "50" }
+  app-c:
+    <<: *app
+    environment: { NOME: c, ATRASO_MS: "200" }
+
+  haproxy:
+    image: haproxy:3.0-alpine
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "8301-8307:8301-8307"
+      - "8399:8399"
+    depends_on: [app-a, app-b, app-c]
+
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    environment:
+      DURACAO: "${DURACAO:-12}"
+    command: ["run", "/scripts/algoritmos.js"]
+    depends_on: [haproxy]

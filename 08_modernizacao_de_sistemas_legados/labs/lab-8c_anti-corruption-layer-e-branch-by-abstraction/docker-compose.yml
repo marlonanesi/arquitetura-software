@@ -1,0 +1,34 @@
+# O legado (formatos antigos) e o serviço novo em duas versões: sem ACL e com ACL + Branch by Abstraction.
+#   legado         http://localhost:9201     (só para você conferir; o serviço novo é que o consome)
+#   novo sem ACL   http://localhost:9202
+#   novo com ACL   http://localhost:9203
+# (as portas 9080 a 9082 são do lab 8B, e 8080 e 8081 do cluster Kind)
+x-app: &app
+  build: .
+  image: lunalog/legado-acl:1.0
+  environment:
+    LEGADO_URL: http://legado:8000
+
+services:
+  legado:
+    <<: *app
+    command: ["python", "legado/legado.py"]
+    ports: ["9201:8000"]
+
+  sem-acl:
+    <<: *app
+    command: ["uvicorn", "sem_acl:app", "--app-dir", "novo", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on: [legado]
+    ports: ["9202:8000"]
+
+  com-acl:
+    <<: *app
+    command: ["uvicorn", "main:app", "--app-dir", "novo/com_acl", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on: [legado]
+    ports: ["9203:8000"]
+
+  testes:
+    <<: *app
+    profiles: ["ferramentas"]
+    command: ["python", "-m", "pytest", "-q"]
+    depends_on: [legado]

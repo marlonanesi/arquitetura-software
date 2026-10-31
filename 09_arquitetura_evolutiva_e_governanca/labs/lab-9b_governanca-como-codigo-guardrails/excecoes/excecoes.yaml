@@ -1,0 +1,15 @@
+# Exceções às regras de arquitetura. Uma exceção NÃO é um jeitinho: é um registro com motivo, responsável e prazo.
+# Quando o prazo vence, a política volta a reprovar a carga de trabalho, e alguém precisa renovar com justificativa
+# (em pull request, com revisão do CODEOWNERS) ou corrigir.
+excecoes:
+  - regra: imagem-latest
+    carga: legado-relatorios
+    motivo: "Imagem de terceiro que só publica a tag latest; substituição prevista no ADR-0008."
+    responsavel: camila
+    expira: "2100-12-31"        # data distante só para o lab continuar reproduzível; em produção, prazo curto (um trimestre)
+
+  - regra: sem-limites
+    carga: batch-migracao
+    motivo: "Job pontual de migração de dados (lab 8D); remover depois da migração."
+    responsavel: roberto
+    expira: "2026-09-30"        # VENCIDA de propósito: a política volta a reprovar

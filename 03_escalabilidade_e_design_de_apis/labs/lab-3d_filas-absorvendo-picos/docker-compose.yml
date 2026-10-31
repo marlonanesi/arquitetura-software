@@ -1,0 +1,57 @@
+# Confirmações de entrega por dois caminhos: gravação direta no banco x fila (RabbitMQ) + worker.
+#   API                       http://localhost:8401
+#   Interface do RabbitMQ     http://localhost:15672   (usuário guest, senha guest: credencial de laboratório)
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+      POSTGRES_DB: confirmacoes
+    # O banco aceita poucas conexões, como em muitos ambientes reais: é o gargalo do lab.
+    command: ["postgres", "-c", "max_connections=30"]
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d confirmacoes"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports: ["15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  api:
+    build: ./app
+    image: lunalog/confirmacoes-api:1.0
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    ports: ["8401:8000"]
+
+  worker:
+    image: lunalog/confirmacoes-api:1.0
+    command: ["python", "worker.py"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    deploy:
+      replicas: 1
+
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    environment:
+      ALVO: "${ALVO:-direto}"
+      TAXA: "${TAXA:-800}"
+      DURACAO: "${DURACAO:-10s}"
+    command: ["run", "/scripts/rajada.js"]
+    depends_on: [api]

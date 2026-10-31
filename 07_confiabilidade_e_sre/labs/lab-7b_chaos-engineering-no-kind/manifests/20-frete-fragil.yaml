@@ -1,0 +1,38 @@
+# O frete SEM as proteções vistas ao longo do curso:
+#  - 1 réplica (qualquer queda é uma interrupção total)
+#  - sem readiness probe (o tráfego chega ao pod antes de ele estar pronto)
+#  - sem PodDisruptionBudget
+#  - timeout longo (5 s) e nenhuma alternativa quando a dependência falha
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frete-fragil
+  namespace: caos
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: frete-fragil }
+  template:
+    metadata:
+      labels: { app: frete-fragil }
+    spec:
+      containers:
+        - name: app
+          image: lunalog/frete-caos:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: PAPEL, value: "frete" }
+            - { name: TIMEOUT_S, value: "5" }
+            - { name: FALLBACK, value: "nao" }
+          ports: [{ containerPort: 8000 }]
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frete-fragil
+  namespace: caos
+spec:
+  selector: { app: frete-fragil }
+  ports: [{ port: 8000, targetPort: 8000 }]

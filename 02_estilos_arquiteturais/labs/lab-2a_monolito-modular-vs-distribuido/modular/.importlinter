@@ -1,0 +1,33 @@
+[importlinter]
+root_package = app
+include_external_packages = False
+
+# Regra 1: cada módulo só enxerga a API pública (api.py) dos outros, nunca os internos.
+[importlinter:contract:somente-api-publica]
+name = Modulos so conversam pela api publica
+type = forbidden
+source_modules =
+    app.entregas
+    app.roteirizacao
+    app.notificacao
+forbidden_modules =
+    app.entregas.servico
+    app.entregas.repositorio
+    app.roteirizacao.calculo
+    app.roteirizacao.repositorio
+    app.notificacao.canais
+    app.notificacao.repositorio
+allow_indirect_imports = True
+ignore_imports =
+    app.entregas.* -> app.entregas.*
+    app.roteirizacao.* -> app.roteirizacao.*
+    app.notificacao.* -> app.notificacao.*
+
+# Regra 2: a direção das dependências é uma só (entregas -> roteirizacao -> notificacao). Sem ciclos.
+[importlinter:contract:sem-ciclos]
+name = Dependencias em um unico sentido
+type = layers
+layers =
+    app.entregas
+    app.roteirizacao
+    app.notificacao

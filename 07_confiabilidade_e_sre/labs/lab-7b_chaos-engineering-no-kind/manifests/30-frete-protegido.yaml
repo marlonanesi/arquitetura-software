@@ -1,0 +1,57 @@
+# O frete COM as proteções:
+#  - 3 réplicas, espalhadas entre os nós
+#  - readiness probe (só recebe tráfego quando está pronto)
+#  - PodDisruptionBudget (nunca menos de 2 pods durante manutenção voluntária)
+#  - timeout curto (0,5 s) e fallback: sem a transportadora, devolve uma tabela local (resposta degradada)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frete-protegido
+  namespace: caos
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: frete-protegido }
+  template:
+    metadata:
+      labels: { app: frete-protegido }
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: frete-protegido }
+      containers:
+        - name: app
+          image: lunalog/frete-caos:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: PAPEL, value: "frete" }
+            - { name: TIMEOUT_S, value: "0.5" }
+            - { name: FALLBACK, value: "sim" }
+          ports: [{ containerPort: 8000 }]
+          readinessProbe:
+            httpGet: { path: /saude, port: 8000 }
+            periodSeconds: 2
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frete-protegido
+  namespace: caos
+spec:
+  selector: { app: frete-protegido }
+  ports: [{ port: 8000, targetPort: 8000 }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frete-protegido
+  namespace: caos
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: frete-protegido }

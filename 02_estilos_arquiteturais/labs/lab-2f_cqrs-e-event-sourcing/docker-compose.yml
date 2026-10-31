@@ -1,0 +1,44 @@
+# CQRS e Event Sourcing sobre o domínio de entregas (evolução do lab 2E).
+#   API (comandos e consultas)   http://localhost:9401
+#   projetor                     atualiza os modelos de leitura a partir dos eventos
+x-app: &app
+  build: .
+  image: lunalog/cqrs-es:1.0
+  environment:
+    DATABASE_URL: postgresql://luna:luna@postgres:5432/eventos
+  depends_on:
+    postgres: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+      POSTGRES_DB: eventos
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d eventos"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    <<: *app
+    ports: ["9401:8000"]
+
+  projetor:
+    <<: *app
+    command: ["python", "src/projetor.py"]
+
+  # ferramentas (sob demanda): testes e replay
+  testes:
+    <<: *app
+    profiles: ["ferramentas"]
+    command: ["python", "-m", "pytest", "-q"]
+
+  replay:
+    <<: *app
+    profiles: ["ferramentas"]
+    command: ["python", "src/reconstruir.py"]

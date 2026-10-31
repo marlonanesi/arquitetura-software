@@ -1,0 +1,5 @@
+{
+  "R1": { "transportadora": "rapido", "filial": "sp", "motorista": "bruno", "destino": "Av. Paulista, 1000" },
+  "R2": { "transportadora": "rapido", "filial": "rj", "motorista": "fabio", "destino": "Av. Atlantica, 200" },
+  "R3": { "transportadora": "veloz",  "filial": "sp", "motorista": "carla", "destino": "Rua Augusta, 300" }
+}

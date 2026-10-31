@@ -1,0 +1,22 @@
+# FITNESS FUNCTION DE ACOPLAMENTO: as regras de dependência da arquitetura, escritas como código.
+# Se alguém importar o que não deve, o pipeline falha, e a arquitetura não se degrada em silêncio.
+[importlinter]
+root_package = lunalog
+
+# Regra 1: camadas. A API pode usar o domínio; o domínio pode usar a infraestrutura; nunca o contrário.
+[importlinter:contract:camadas]
+name = Camadas: api -> dominio -> infra
+type = layers
+layers =
+    lunalog.api
+    lunalog.dominio
+    lunalog.infra
+
+# Regra 2: os módulos de domínio são independentes entre si.
+# Tarifas não conhece clientes e clientes não conhece tarifas: é o que permite extrair um deles depois.
+[importlinter:contract:dominios-independentes]
+name = Dominios independentes entre si
+type = independence
+modules =
+    lunalog.dominio.tarifas
+    lunalog.dominio.clientes

@@ -1,0 +1,167 @@
+# PADRÃO 2: AMBASSADOR
+# Uma dependência externa instável (falha em metade das chamadas). Sem o ambassador, o
+# cliente enxerga cada falha. Com ele, um proxy Envoy no mesmo pod cuida de retries e
+# timeouts, e o cliente só fala com "localhost:9000", como se a dependência fosse local.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cotacao-externa-script
+  namespace: padroes
+data:
+  externa.py: |
+    # Simula um serviço externo instável: 50% das chamadas falham com HTTP 503.
+    import random
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if random.random() < 0.5:
+                self.send_response(503)
+                self.end_headers()
+                self.wfile.write(b"indisponivel")
+            else:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"frete": 46.25}')
+        def log_message(self, *a):
+            pass
+
+    print("cotacao externa (50% de falhas) na porta 8000", flush=True)
+    HTTPServer(("0.0.0.0", 8000), H).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cotacao-externa
+  namespace: padroes
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: cotacao-externa }
+  template:
+    metadata:
+      labels: { app: cotacao-externa }
+    spec:
+      containers:
+        - name: externa
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/externa.py"]
+          volumeMounts:
+            - { name: script, mountPath: /app }
+      volumes:
+        - name: script
+          configMap: { name: cotacao-externa-script }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cotacao-externa
+  namespace: padroes
+spec:
+  selector: { app: cotacao-externa }
+  ports:
+    - port: 8000
+---
+# A configuração do ambassador (Envoy): retry em erro 5xx, até 3 vezes, com timeout por tentativa.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-config
+  namespace: padroes
+data:
+  envoy.yaml: |
+    admin:
+      address: { socket_address: { address: 127.0.0.1, port_value: 9901 } }
+    static_resources:
+      listeners:
+        - name: local
+          address: { socket_address: { address: 127.0.0.1, port_value: 9000 } }
+          filter_chains:
+            - filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: ambassador
+                    route_config:
+                      name: rotas
+                      virtual_hosts:
+                        - name: externa
+                          domains: ["*"]
+                          routes:
+                            - match: { prefix: "/" }
+                              route:
+                                cluster: externa
+                                timeout: 3s
+                                retry_policy:
+                                  retry_on: "5xx,connect-failure"
+                                  num_retries: 3
+                                  per_try_timeout: 1s
+                    http_filters:
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      clusters:
+        - name: externa
+          type: STRICT_DNS
+          connect_timeout: 1s
+          load_assignment:
+            cluster_name: externa
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address: { socket_address: { address: cotacao-externa, port_value: 8000 } }
+---
+# SEM o ambassador: o cliente fala direto com a dependência instável.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cliente-direto
+  namespace: padroes
+  labels: { app: cliente-direto }
+spec:
+  containers:
+    - name: cliente
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - |
+          ok=0; erro=0
+          while true; do
+            if wget -q -T 2 -O /dev/null http://cotacao-externa:8000/; then ok=$((ok+1)); else erro=$((erro+1)); fi
+            echo "DIRETO: ok=$ok erro=$erro"
+            sleep 0.5
+          done
+---
+# COM o ambassador: o cliente fala com localhost:9000; o Envoy, no mesmo pod, faz o resto.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cliente-com-ambassador
+  namespace: padroes
+  labels: { app: cliente-com-ambassador }
+spec:
+  containers:
+    # O cliente é o mesmo código do pod anterior, só que aponta para localhost.
+    - name: cliente
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - |
+          # Espera o ambassador (Envoy) ficar pronto: os contêineres do pod sobem em paralelo.
+          until wget -q -O /dev/null http://localhost:9901/ready; do sleep 1; done
+          ok=0; erro=0
+          while true; do
+            if wget -q -T 4 -O /dev/null http://localhost:9000/; then ok=$((ok+1)); else erro=$((erro+1)); fi
+            echo "COM AMBASSADOR: ok=$ok erro=$erro"
+            sleep 0.5
+          done
+    - name: ambassador
+      image: envoyproxy/envoy:v1.32.1
+      args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "warn"]
+      volumeMounts:
+        - { name: config, mountPath: /etc/envoy }
+  volumes:
+    - name: config
+      configMap: { name: envoy-config }

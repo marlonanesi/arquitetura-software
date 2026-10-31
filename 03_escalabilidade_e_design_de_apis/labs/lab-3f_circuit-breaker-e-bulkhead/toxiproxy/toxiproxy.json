@@ -1,0 +1,14 @@
+[
+  {
+    "name": "mapas",
+    "listen": "0.0.0.0:9001",
+    "upstream": "mapas:8000",
+    "enabled": true
+  },
+  {
+    "name": "notificacao",
+    "listen": "0.0.0.0:9002",
+    "upstream": "notificacao:8000",
+    "enabled": true
+  }
+]

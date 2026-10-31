@@ -1,0 +1,27 @@
+# Usa uma imagem :latest, mas tem uma EXCECAO vigente em excecoes/excecoes.yaml (prazo registrado no arquivo).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: legado-relatorios
+  labels:
+    app: legado-relatorios
+    lunalog.io/dono: time-legado-relatorios
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: legado-relatorios }
+  template:
+    metadata:
+      labels: { app: legado-relatorios }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: terceiro/relatorios:latest
+        ports: [{ containerPort: 8000 }]
+        resources:
+          limits: { cpu: 500m, memory: 256Mi }
+          requests: { cpu: 100m, memory: 128Mi }
+        readinessProbe:
+          httpGet: { path: /saude, port: 8000 }

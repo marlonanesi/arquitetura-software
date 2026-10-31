@@ -1,0 +1,1 @@
+{"name": "lento", "type": "latency", "stream": "downstream", "attributes": {"latency": 30000, "jitter": 0}}

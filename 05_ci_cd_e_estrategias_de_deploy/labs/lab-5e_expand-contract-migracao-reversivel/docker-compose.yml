@@ -1,0 +1,52 @@
+name: lab-5e-expand-contract
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lunalog
+      POSTGRES_PASSWORD: lunalog-exemplo
+      POSTGRES_DB: lunalog
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./sql:/sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lunalog -d lunalog"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Versão atual da aplicação: usa a coluna nome_cliente.
+  app-v1:
+    build: ./app
+    environment: &env
+      VERSAO: v1
+      DATABASE_URL: postgresql://lunalog:lunalog-exemplo@postgres:5432/lunalog
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Nova versão: usa a coluna destinatario_nome.
+  # Durante um deploy gradual (rolling), as duas versões atendem ao mesmo tempo.
+  app-v2:
+    build: ./app
+    environment:
+      <<: *env
+      VERSAO: v2
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Gerador de carga. Não sobe junto: use "docker compose run --rm k6 run ...".
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - app-v1
+      - app-v2

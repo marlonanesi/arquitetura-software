@@ -1,0 +1,5 @@
+{
+  "E1": { "rota": "R1", "transportadora": "rapido", "filial": "sp", "motorista": "bruno", "status": "em_rota" },
+  "E2": { "rota": "R2", "transportadora": "rapido", "filial": "rj", "motorista": "fabio", "status": "em_rota" },
+  "E3": { "rota": "R3", "transportadora": "veloz",  "filial": "sp", "motorista": "carla", "status": "entregue" }
+}

@@ -1,0 +1,9 @@
+{
+  "decisao": "Migrar o módulo de billing da LunaLog para um SaaS de cobrança",
+  "fatos_obrigatorios_em_todos": ["R$ 42.000", "R$ 26.000", "R$ 150.000", "9,4 meses", "3 meses"],
+  "por_publico": {
+    "para-tech-lead.md": {"termos_obrigatorios": ["lock-in", "integração", "reversibilidade"], "max_palavras": 450},
+    "para-cfo.md": {"termos_obrigatorios": ["retorno", "custo"], "max_palavras": 320, "jargao_proibido": ["idempotência", "webhook", "API", "latência", "schema", "Kafka", "microsserviço", "endpoint"]},
+    "para-board.md": {"termos_obrigatorios": ["risco"], "max_palavras": 240, "jargao_proibido": ["idempotência", "webhook", "API", "latência", "schema", "Kafka", "microsserviço", "endpoint", "ROI", "payback"]}
+  }
+}

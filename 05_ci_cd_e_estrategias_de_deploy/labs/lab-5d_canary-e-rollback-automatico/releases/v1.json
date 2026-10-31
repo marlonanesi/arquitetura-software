@@ -1,0 +1,1 @@
+{"spec":{"template":{"spec":{"containers":[{"name":"app","image":"lunalog/canario:1.0.0"}]}}}}

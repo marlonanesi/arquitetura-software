@@ -1,0 +1,75 @@
+# Dois microsserviços (rotas e entregas) que NÃO decidem autorização: perguntam a um ponto de decisão.
+#   OPA (RBAC e ABAC com Rego)   interno; logs de decisão no console
+#   OpenFGA (ReBAC)              interno
+#   serviço de rotas             http://localhost:8611
+#   serviço de entregas          http://localhost:8612
+x-servico: &servico
+  build: ./app
+  image: lunalog/pdp-servico:1.0
+  depends_on:
+    opa: { condition: service_started }
+    openfga: { condition: service_healthy }
+    fga-setup: { condition: service_completed_successfully }
+
+services:
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--watch", "--set=decision_logs.console=true", "/policies", "/data"]
+    volumes:
+      - ./policies:/policies:ro
+      - ./data:/data:ro
+
+  openfga:
+    image: openfga/openfga:latest
+    command: ["run"]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=localhost:8081"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Cria a loja do OpenFGA com o modelo e as tuplas de store.fga.yaml e termina.
+  fga-setup:
+    image: openfga/cli:latest
+    command: ["store", "import", "--file", "/modelo/store.fga.yaml", "--api-url", "http://openfga:8080"]
+    volumes:
+      - ./fga:/modelo:ro
+    depends_on:
+      openfga: { condition: service_healthy }
+    restart: "no"
+
+  rotas:
+    <<: *servico
+    environment: { SERVICO: rotas, PDP: abac }
+    ports: ["8611:8000"]
+
+  entregas:
+    <<: *servico
+    environment: { SERVICO: entregas, PDP: abac }
+    ports: ["8612:8000"]
+
+  # ----- ferramentas (rodam sob demanda) -----
+  cliente:
+    image: python:3.12-slim
+    profiles: ["ferramentas"]
+    working_dir: /scripts
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      ROTAS: http://rotas:8000
+      ENTREGAS: http://entregas:8000
+
+  opa-test:
+    image: openpolicyagent/opa:latest
+    profiles: ["ferramentas"]
+    command: ["test", "/policies", "-v"]
+    volumes:
+      - ./policies:/policies:ro
+
+  fga:
+    image: openfga/cli:latest
+    profiles: ["ferramentas"]
+    environment:
+      FGA_API_URL: http://openfga:8080
+    volumes:
+      - ./fga:/modelo:ro

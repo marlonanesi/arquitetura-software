@@ -1,0 +1,49 @@
+name: lab-3c-cache
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lunalog
+      POSTGRES_PASSWORD: lunalog-exemplo
+      POSTGRES_DB: lunalog
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lunalog -d lunalog"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ./app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://lunalog:lunalog-exemplo@postgres:5432/lunalog
+      REDIS_URL: redis://redis:6379/0
+      TTL_SEGUNDOS: "${TTL_SEGUNDOS:-10}"          # validade do cache
+      DB_LATENCIA_SEGUNDOS: "${DB_LATENCIA_SEGUNDOS:-0.15}"  # custo simulado de cada consulta ao banco
+      DB_POOL_MAX: "${DB_POOL_MAX:-10}"            # conexões simultâneas que o banco aguenta
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Gerador de carga. Não sobe junto: use "docker compose run --rm k6 run ...".
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - app

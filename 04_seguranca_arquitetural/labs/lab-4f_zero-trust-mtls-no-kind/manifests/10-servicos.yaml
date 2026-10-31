@@ -1,0 +1,129 @@
+# O serviço de tracking (o alvo) e três clientes, cada um com a sua identidade (ServiceAccount).
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: tracking, namespace: loja }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: cobranca, namespace: loja }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: relatorios, namespace: loja }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracking-script
+  namespace: loja
+data:
+  tracking.py: |
+    import json
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            corpo = json.dumps({"entrega": "E-100", "status": "em_rota", "cpf_destinatario": "123.456.789-00"}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(corpo)))
+            self.end_headers()
+            self.wfile.write(corpo)
+        def log_message(self, *a):
+            pass
+
+    print("tracking na porta 8000", flush=True)
+    HTTPServer(("0.0.0.0", 8000), H).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracking
+  namespace: loja
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: tracking }
+  template:
+    metadata:
+      labels: { app: tracking }
+    spec:
+      serviceAccountName: tracking
+      containers:
+        - name: tracking
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/tracking.py"]
+          ports: [{ containerPort: 8000 }]
+          volumeMounts: [{ name: script, mountPath: /app }]
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+      volumes:
+        - name: script
+          configMap: { name: tracking-script }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking
+  namespace: loja
+spec:
+  selector: { app: tracking }
+  ports: [{ port: 8000 }]
+---
+# Clientes: pods que ficam "dormindo" para executarmos chamadas com "kubectl exec".
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: cobranca, namespace: loja }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: cobranca }
+  template:
+    metadata:
+      labels: { app: cobranca }
+    spec:
+      serviceAccountName: cobranca
+      containers:
+        - name: cliente
+          image: curlimages/curl:8.11.0
+          command: ["sleep", "infinity"]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: relatorios, namespace: loja }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: relatorios }
+  template:
+    metadata:
+      labels: { app: relatorios }
+    spec:
+      serviceAccountName: relatorios
+      containers:
+        - name: cliente
+          image: curlimages/curl:8.11.0
+          command: ["sleep", "infinity"]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+---
+# Um cliente FORA da malha (outro namespace, sem sidecar).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: intruso, namespace: fora-da-malha }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: intruso }
+  template:
+    metadata:
+      labels: { app: intruso }
+    spec:
+      containers:
+        - name: cliente
+          image: curlimages/curl:8.11.0
+          command: ["sleep", "infinity"]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }

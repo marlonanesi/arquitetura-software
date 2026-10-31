@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roteirizacao
+  labels:
+    app: roteirizacao
+    lunalog.io/dono: time-roteirizacao
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: roteirizacao }
+  template:
+    metadata:
+      labels: { app: roteirizacao }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: app
+        image: lunalog/roteirizacao:2.0.1
+        ports: [{ containerPort: 8000 }]
+        resources:
+          limits: { cpu: 500m, memory: 256Mi }
+          requests: { cpu: 100m, memory: 128Mi }
+        readinessProbe:
+          httpGet: { path: /saude, port: 8000 }

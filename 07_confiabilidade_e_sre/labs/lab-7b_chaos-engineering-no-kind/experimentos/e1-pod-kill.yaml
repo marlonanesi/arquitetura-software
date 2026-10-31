@@ -1,0 +1,28 @@
+# EXPERIMENTO 1: perder um pod do frete.
+# Hipótese: "se um pod do frete morrer, o cliente quase não percebe (erros < 1% e p95 < 800 ms)".
+# O mesmo ataque nos dois alvos. O frágil tem 1 pod (todo ele cai); o protegido tem 3 (cai um terço).
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: e1-pod-kill-fragil
+  namespace: caos
+spec:
+  action: pod-kill
+  mode: one
+  gracePeriod: 0
+  selector:
+    namespaces: [caos]
+    labelSelectors: { app: frete-fragil }
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: e1-pod-kill-protegido
+  namespace: caos
+spec:
+  action: pod-kill
+  mode: one
+  gracePeriod: 0
+  selector:
+    namespaces: [caos]
+    labelSelectors: { app: frete-protegido }

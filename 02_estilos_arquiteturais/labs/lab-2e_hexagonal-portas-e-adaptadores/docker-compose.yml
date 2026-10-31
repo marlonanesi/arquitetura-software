@@ -1,0 +1,40 @@
+# Apoio opcional: o lab roda só com Python. O Compose adiciona um PostgreSQL e um receptor de webhook
+# para os cenários de troca de adaptador, e um contêiner "lab" para rodar tudo sem instalar nada.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luna
+      POSTGRES_PASSWORD: luna
+      POSTGRES_DB: entregas
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d entregas"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  receptor:
+    image: python:3.12-slim
+    command: ["python", "/app/receptor.py"]
+    ports:
+      - "127.0.0.1:9000:9000"   # para o Python local (cenario 3); o contêiner "lab" usa http://receptor:9000/
+    volumes:
+      - ./receptor:/app:ro
+
+  lab:
+    build: .
+    profiles: ["ferramentas"]
+    environment:
+      POSTGRES_URL: postgresql://luna:luna@postgres:5432/entregas
+      WEBHOOK_URL: http://receptor:9000/
+      SQLITE_PATH: /data/entregas.db
+    volumes:
+      - ./src:/lab/src
+      - ./tests:/lab/tests
+      - lab-dados:/data
+    depends_on:
+      postgres: { condition: service_healthy }
+      receptor: { condition: service_started }
+
+volumes:
+  lab-dados:

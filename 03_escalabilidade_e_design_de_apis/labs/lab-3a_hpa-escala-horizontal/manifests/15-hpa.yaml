@@ -1,0 +1,28 @@
+# Horizontal Pod Autoscaler: ajusta o número de réplicas pelo uso médio de CPU.
+# Mira 50% do "request" de CPU (50m de 100m). Acima disso, cria réplicas; abaixo, remove.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tracking
+  namespace: escala
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tracking
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0     # reage logo ao aumento (aqui, para a aula)
+      policies:
+        - { type: Pods, value: 2, periodSeconds: 15 }
+    scaleDown:
+      stabilizationWindowSeconds: 30    # em produção, valores maiores evitam "flapping"

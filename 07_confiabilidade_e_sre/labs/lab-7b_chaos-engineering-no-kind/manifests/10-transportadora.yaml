@@ -1,0 +1,35 @@
+# A dependência do frete: a "transportadora". Dois pods, com readiness.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transportadora
+  namespace: caos
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: transportadora }
+  template:
+    metadata:
+      labels: { app: transportadora }
+    spec:
+      containers:
+        - name: app
+          image: lunalog/frete-caos:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: PAPEL, value: "transportadora" }
+          ports: [{ containerPort: 8000 }]
+          readinessProbe:
+            httpGet: { path: /saude, port: 8000 }
+            periodSeconds: 2
+          resources:
+            requests: { cpu: 25m, memory: 48Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transportadora
+  namespace: caos
+spec:
+  selector: { app: transportadora }
+  ports: [{ port: 8000, targetPort: 8000 }]

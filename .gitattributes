@@ -1,0 +1,3 @@
+# Scripts de shell são montados em contêineres Linux: precisam de fim de linha LF,
+# mesmo quando o repositório é clonado no Windows.
+*.sh text eol=lf

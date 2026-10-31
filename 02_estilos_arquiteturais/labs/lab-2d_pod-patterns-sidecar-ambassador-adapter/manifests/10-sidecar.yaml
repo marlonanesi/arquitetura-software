@@ -1,0 +1,138 @@
+# PADRÃO 1: SIDECAR
+# A aplicação legada grava logs em um ARQUIVO e não sabe falar com nenhum sistema de logs.
+# Um contêiner auxiliar (Fluent Bit) no mesmo pod lê o arquivo, enriquece cada linha e a envia
+# ao coletor central. A aplicação não muda uma linha.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: padroes
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush        1
+        Log_Level    warn
+
+    [INPUT]
+        Name             tail
+        Path             /var/log/app/*.log
+        Tag              legado
+        Read_from_head   true
+
+    # Enriquece cada linha com o pod de origem, sem a aplicação saber.
+    [FILTER]
+        Name    modify
+        Match   legado
+        Add     pod ${POD_NAME}
+        Add     origem sidecar-fluent-bit
+
+    # Saída 1: a saída padrão do próprio sidecar (visível com "kubectl logs -c fluent-bit")
+    [OUTPUT]
+        Name     stdout
+        Match    *
+        Format   json_lines
+
+    # Saída 2: o coletor central de logs
+    [OUTPUT]
+        Name     http
+        Match    *
+        Host     coletor
+        Port     8080
+        URI      /logs
+        Format   json_lines
+---
+# O coletor central: só imprime o que recebe.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coletor-script
+  namespace: padroes
+data:
+  coletor.py: |
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            corpo = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+            for linha in corpo.splitlines():
+                print("RECEBIDO:", linha, flush=True)
+            self.send_response(200)
+            self.end_headers()
+        def log_message(self, *a):
+            pass
+
+    print("coletor central de logs pronto na porta 8080", flush=True)
+    HTTPServer(("0.0.0.0", 8080), H).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coletor
+  namespace: padroes
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: coletor }
+  template:
+    metadata:
+      labels: { app: coletor }
+    spec:
+      containers:
+        - name: coletor
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/coletor.py"]
+          volumeMounts:
+            - { name: script, mountPath: /app }
+      volumes:
+        - name: script
+          configMap: { name: coletor-script }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coletor
+  namespace: padroes
+spec:
+  selector: { app: coletor }
+  ports:
+    - port: 8080
+---
+# O pod com o padrão sidecar: dois contêineres que compartilham um volume.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: legado-com-sidecar
+  namespace: padroes
+  labels: { app: legado-com-sidecar }
+spec:
+  containers:
+    # Contêiner principal: a aplicação legada, intocada. Só grava em /var/log/app/app.log.
+    - name: legado
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - |
+          i=0
+          while true; do
+            i=$((i+1))
+            echo "pedido $i processado com sucesso" >> /var/log/app/app.log
+            sleep 2
+          done
+      volumeMounts:
+        - { name: logs, mountPath: /var/log/app }
+    # Contêiner auxiliar: o sidecar. Lê o mesmo volume e entrega os logs.
+    - name: fluent-bit
+      image: fluent/fluent-bit:3.2.2
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef: { fieldPath: metadata.name }
+      volumeMounts:
+        - { name: logs, mountPath: /var/log/app, readOnly: true }
+        - { name: config, mountPath: /fluent-bit/etc/fluent-bit.conf, subPath: fluent-bit.conf }
+  volumes:
+    - name: logs
+      emptyDir: {}
+    - name: config
+      configMap: { name: fluent-bit-config }

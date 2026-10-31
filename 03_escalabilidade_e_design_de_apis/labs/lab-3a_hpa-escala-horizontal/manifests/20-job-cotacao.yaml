@@ -1,0 +1,25 @@
+# Gerador de carga que roda DENTRO do cluster, como um Job.
+# Pré-requisito (uma vez): kubectl -n escala create configmap k6-scripts --from-file=k6/
+# Para repetir, apague o Job anterior: kubectl -n escala delete job k6-cotacao
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-cotacao
+  namespace: escala
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 900
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:0.54.0
+          args: ["run", "/scripts/cotacao.js"]
+          env:
+            - { name: TAXA, value: "40" }
+            - { name: DURACAO, value: "120s" }
+          volumeMounts: [{ name: scripts, mountPath: /scripts }]
+      volumes:
+        - name: scripts
+          configMap: { name: k6-scripts }

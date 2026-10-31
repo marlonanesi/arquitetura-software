@@ -1,0 +1,10 @@
+# Visualizador do modelo C4: lê o workspace.dsl e redesenha os diagramas a cada alteração do arquivo.
+# Abra http://localhost:8089 (a porta 8080 fica livre para os outros labs).
+services:
+  structurizr:
+    image: structurizr/structurizr
+    command: local
+    ports:
+      - "8089:8080"
+    volumes:
+      - .:/usr/local/structurizr

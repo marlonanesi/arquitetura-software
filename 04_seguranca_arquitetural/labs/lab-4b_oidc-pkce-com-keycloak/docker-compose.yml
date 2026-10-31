@@ -1,0 +1,28 @@
+name: lab-4b-oidc
+
+services:
+  # Provedor de identidade (IdP). Modo de desenvolvimento, só para o laboratório.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-exemplo
+      KC_HOSTNAME: http://localhost:8180
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-lunalog.json:/opt/keycloak/data/import/realm-lunalog.json:ro
+    ports:
+      - "8180:8080"
+
+  # Duas aplicações de navegador, em origens diferentes, para ver o login único (SSO).
+  #   http://localhost:3001  Portal da transportadora (client "portal")
+  #   http://localhost:3002  Painel de operações      (client "painel")
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "3001:3001"
+      - "3002:3002"

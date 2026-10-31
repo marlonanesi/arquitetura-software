@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s       # de quanto em quanto tempo o Prometheus busca as métricas (pull)
+  evaluation_interval: 5s
+
+scrape_configs:
+  # As métricas dos quatro serviços chegam por aqui, via Collector.
+  - job_name: otel-collector
+    honor_labels: true      # mantém o rótulo "job" que o OpenTelemetry já colocou (nome do serviço)
+    static_configs:
+      - targets: ["otel-collector:8889"]
+
+  # O Prometheus também mede a si mesmo (útil para ver o número de séries).
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

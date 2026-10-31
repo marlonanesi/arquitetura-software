@@ -1,0 +1,13 @@
+# O ROLLBACK do blue/green: o Service volta a apontar para o blue.
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bg
+  namespace: deploy
+spec:
+  type: NodePort
+  selector: { app: app-bg, cor: blue }
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30081

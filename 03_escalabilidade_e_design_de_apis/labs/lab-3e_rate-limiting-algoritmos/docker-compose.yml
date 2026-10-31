@@ -1,0 +1,51 @@
+# Rate limiting com Redis: duas réplicas da API atrás de um Nginx, compartilhando os contadores.
+#   Entrada (Nginx)   http://localhost:8501     (a API ainda pode ser chamada em 8502 e 8503, réplica a réplica)
+x-api: &api
+  build: ./app
+  image: lunalog/ratelimit-api:1.0
+  environment: &env
+    LIMITE: "10"
+    JANELA_S: "5"
+  depends_on: [redis]
+
+services:
+  redis:
+    image: redis:7-alpine
+
+  api1:
+    <<: *api
+    environment: { <<: *env, REPLICA: api1 }
+    ports: ["8502:8000"]
+
+  api2:
+    <<: *api
+    environment: { <<: *env, REPLICA: api2 }
+    ports: ["8503:8000"]
+
+  lb:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports: ["8501:80"]
+    depends_on: [api1, api2]
+
+  # ----- ferramentas (rodam sob demanda) -----
+  cliente:
+    image: python:3.12-slim
+    profiles: ["ferramentas"]
+    working_dir: /scripts
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      BASE: http://lb
+    depends_on: [lb]
+
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["ferramentas"]
+    volumes:
+      - ./k6:/scripts:ro
+    environment:
+      ESCOPO: "${ESCOPO:-cliente}"
+    command: ["run", "/scripts/isolamento.js"]
+    depends_on: [lb]

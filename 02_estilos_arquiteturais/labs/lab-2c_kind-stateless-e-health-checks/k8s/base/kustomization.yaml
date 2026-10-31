@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lunalog
+
+resources:
+  - namespace.yaml
+  - redis.yaml
+  - deployment.yaml
+  - service.yaml
+
+# O Secret é gerado a partir de um valor fictício, só para mostrar segredo fora da imagem.
+secretGenerator:
+  - name: comprovantes-segredos
+    literals:
+      - TOKEN_INTEGRACAO=token-de-exemplo-nao-use-em-producao

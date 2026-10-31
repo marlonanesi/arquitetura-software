@@ -1,0 +1,26 @@
+# Roteamento por severidade: cada tipo de alerta vai para o destino certo.
+route:
+  receiver: sem-destino            # alertas sem severidade conhecida não notificam ninguém
+  group_by: ["alertname"]
+  group_wait: 5s                   # espera curta para agrupar alertas parecidos numa só notificação
+  group_interval: 15s
+  repeat_interval: 10m
+  routes:
+    - matchers: ['severity="page"']
+      receiver: plantao            # acorda alguém
+    - matchers: ['severity="ticket"']
+      receiver: fila-de-tickets    # vira trabalho para o dia útil
+    - matchers: ['severity="causa"']
+      receiver: ruido              # o antipadrão: aparece aqui só para compararmos
+
+receivers:
+  - name: sem-destino
+  - name: plantao
+    webhook_configs:
+      - url: http://receptor:9000/plantao
+  - name: fila-de-tickets
+    webhook_configs:
+      - url: http://receptor:9000/tickets
+  - name: ruido
+    webhook_configs:
+      - url: http://receptor:9000/ruido
