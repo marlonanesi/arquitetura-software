@@ -96,7 +96,10 @@ if RAIZ.exists():
 RAIZ.mkdir(parents=True)
 git("init", "-q", "-b", "main")
 
-inicio = datetime(2025, 11, 3, 9, 0)
+# O histórico (com a semente fixa) dura 358 dias e 16 horas. Ele termina 2 dias antes de hoje, para as janelas relativas
+# da análise (por exemplo "3 months ago") valerem em qualquer data em que o lab for feito.
+DURACAO = timedelta(days=358, hours=16)
+inicio = (datetime.now() - DURACAO - timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
 for caminho, conteudo in ARQUIVOS.copy().items():
     escrever(caminho, conteudo)
 commitar("Versao inicial", "Roberto", inicio)

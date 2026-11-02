@@ -135,7 +135,7 @@ curl -s -X POST localhost:9201/entregas -H 'Content-Type: application/json' \
 curl -s -w ' http=%{http_code}\n' localhost:9203/entregas/E-8
 ```
 
-A resposta é um `502` com a mensagem `o legado devolveu algo que a ACL nao sabe traduzir: status desconhecido no legado: 7`. A ACL **falha de forma clara e na fronteira**, em vez de deixar um dado estranho entrar no domínio e causar um erro obscuro três camadas depois.
+A resposta é um `502` com a mensagem `o legado devolveu algo que a ACL nao sabe traduzir: status desconhecido no legado: 7`. (Faça este teste com o legado no formato **antigo**, como acima: no formato novo, é o próprio legado que quebra com o status 7, e o serviço devolve um `500` genérico.) A ACL **falha de forma clara e na fronteira**, em vez de deixar um dado estranho entrar no domínio e causar um erro obscuro três camadas depois.
 
 ### Cenário 4: Branch by Abstraction
 

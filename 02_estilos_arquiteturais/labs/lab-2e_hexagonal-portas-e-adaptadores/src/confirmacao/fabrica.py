@@ -11,6 +11,7 @@ import os
 
 from confirmacao.adaptadores.geocodificador_google import GeocodificadorGoogle
 from confirmacao.adaptadores.geocodificador_here import GeocodificadorHere
+from confirmacao.adaptadores.geocodificador_osm import GeocodificadorOsm
 from confirmacao.adaptadores.notificador_log import NotificadorEmLog
 from confirmacao.adaptadores.notificador_webhook import NotificadorWebhook
 from confirmacao.adaptadores.relogio_sistema import RelogioDoSistema
@@ -31,6 +32,8 @@ NOTIFICADORES = {
 GEOCODIFICADORES = {
     "google": lambda env: GeocodificadorGoogle(),
     "here": lambda env: GeocodificadorHere(),
+    "osm": lambda env: GeocodificadorOsm(),
+
 }
 
 

@@ -158,7 +158,7 @@ curl -s localhost:9301/entregas/E-000012                      # fonte: "legado (
 curl -s localhost:9301/entregas/E-000012                      # fonte: "novo"
 ```
 
-Na primeira leitura em modo `preguicosa`, o serviço não acha no novo, busca no legado, **traduz, grava no novo** e devolve; na segunda, já vem do novo. Para um registro inválido, a resposta é um `422` claro (`registro no legado nao pode ser migrado`), em vez de um erro genérico. A reconciliação mais tarde repara os outros quatro apagados.
+Na primeira leitura em modo `preguicosa`, o serviço não acha no novo, busca no legado, **traduz, grava no novo** e devolve; na segunda, já vem do novo. Para um registro inválido, a resposta é um `422` claro (`registro no legado nao pode ser migrado`), em vez de um erro genérico. Os outros quatro apagados continuam ausentes do novo: **rode `migrar reconciliar.py` antes do Passo 6** para repará-los. Sem isso, a verificação do cutover dá `DIVERGENTE` (`faltando no novo=4`).
 
 ### Passo 6: cutover da leitura e depois da escrita
 

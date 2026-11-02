@@ -47,7 +47,7 @@ flowchart LR
 - Docker Engine ou Docker Desktop (Compose v2)
 - Cerca de 2 GB de RAM livres
 - As portas 8401 e 15672 livres
-- Um shell Bash e `curl` para os scripts
+- Um shell Bash e `curl` para os scripts. No PowerShell, os scripts `.sh` não rodam direto: use `curl.exe` no lugar de `curl` e defina as variáveis do k6 com `$env:ALVO = 'fila'` (e `$env:TAXA`, `$env:DURACAO`), apagando-as depois com `Remove-Item Env:ALVO`
 
 ## Como executar
 
@@ -166,11 +166,11 @@ ALVO=fila TAXA=1000 DURACAO=4s docker compose --profile ferramentas run --rm k6
 docker compose kill worker
 curl -s localhost:8401/estado          # parcial: o worker parou no meio
 docker compose start worker
-sleep 12
-curl -s localhost:8401/estado          # {"gravadas":4000}
+sleep 20
+curl -s localhost:8401/estado          # {"gravadas":4000}, ou 4001: o k6 pode enviar uma a mais
 ```
 
-O que observar: o `estado` logo após o `kill` mostra um valor parcial (por exemplo, 2.155 de 4.000). Ao reiniciar, o worker retoma e o total chega a **exatamente 4.000**. As mensagens que estavam em processamento e não tinham recebido o ack foram **reentregues** pelo RabbitMQ, e a gravação idempotente evitou duplicar as que já tinham ido ao banco. É a garantia *pelo menos uma vez*, mais a idempotência, que formam o *efetivamente uma vez*.
+O que observar: o `estado` logo após o `kill` mostra um valor parcial (por exemplo, 2.155 de 4.000). Ao reiniciar, o worker retoma (leva uns 5 s para conectar e uns 10 s para drenar o resto, por isso a espera de 20 s) e o total chega a **exatamente o número de mensagens enviadas** (4.000 ou 4.001, o resumo do k6 mostra o valor). As mensagens que estavam em processamento e não tinham recebido o ack foram **reentregues** pelo RabbitMQ, e a gravação idempotente evitou duplicar as que já tinham ido ao banco. É a garantia *pelo menos uma vez*, mais a idempotência, que formam o *efetivamente uma vez*.
 
 ### Fila ou log de eventos?
 

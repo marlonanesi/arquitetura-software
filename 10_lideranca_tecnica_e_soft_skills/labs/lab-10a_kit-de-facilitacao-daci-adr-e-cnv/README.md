@@ -36,7 +36,7 @@ python scripts/verificar_kit.py
 [DACI] exemplo-service-mesh.md: ok (1 Driver, 1 Approver, contribuintes, informados e prazo)
 [ADR] adr-resultado-exemplo.md: ok
 [PUBLICO] para-tech-lead.md (349 palavras): ok
-[PUBLICO] para-cfo.md (273 palavras): ok
+[PUBLICO] para-cfo.md (278 palavras): ok
 [PUBLICO] para-board.md (234 palavras): ok
 
 RESULTADO: o kit esta consistente
@@ -108,7 +108,7 @@ O cenário da aula 10.2: a LunaLog precisa aprovar a migração do módulo de bi
 | Documento | Palavras | A pergunta que responde | O que tem | O que **não** tem |
 |---|---|---|---|---|
 | `para-tech-lead.md` | cerca de 350 | "Funciona e dá para voltar atrás?" | integração, lock-in, reversibilidade, o plano de migração | só custo |
-| `para-cfo.md` | cerca de 270 | "Quanto custa, quando se paga, qual o risco do número?" | custo, retorno, premissas, o que pode mudar o resultado | jargão técnico |
+| `para-cfo.md` | cerca de 280 | "Quanto custa, quando se paga, qual o risco do número?" | custo, retorno, premissas, o que pode mudar o resultado | jargão técnico |
 | `para-board.md` | cerca de 230 | "O que isso protege ou ameaça no negócio?" | o risco de negócio, a decisão pedida | detalhes e siglas |
 
 As três são **verdadeiras**, cada uma no vocabulário certo. O verificador confere que os **mesmos números** aparecem nas três, que cada uma tem os termos que o seu público precisa ouvir, que o **jargão proibido** não aparece e que o **tamanho** é razoável. Quando você rodar `--ruins`, ele aponta uma versão para o CFO com o custo errado (R$ 40.000) e cheia de "webhook" e "idempotência", e uma versão para o board longa demais, cheia de siglas.

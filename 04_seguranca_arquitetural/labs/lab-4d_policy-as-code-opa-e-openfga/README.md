@@ -234,6 +234,7 @@ lab-4d_policy-as-code-opa-e-openfga/
 - O OpenFGA roda em **memória** (os dados somem ao reiniciar). Em produção, usa PostgreSQL ou MySQL e uma estratégia de sincronização das tuplas com a fonte de verdade da organização.
 - Casbin, a terceira ferramenta citada na aula 4.10, não está no lab. Ela embute o motor de política na própria aplicação (como biblioteca), em vez de um serviço externo.
 - O lab usa o OPA para RBAC e ABAC e o OpenFGA para ReBAC. Isso é uma escolha didática: o OPA também modela relacionamentos, e o OpenFGA aceita condições. Na prática, as equipes costumam **combinar** os modelos.
+- As imagens estão **fixadas em versões** no `docker-compose.yml` (OPA 1.21.4, OpenFGA v1.22.0 e fga CLI v0.8.2, as usadas nos resultados de referência), para a saída não mudar quando sair uma versão nova. Para testar uma versão mais recente, troque as tags no compose e refaça os cenários: a sintaxe do Rego e dos comandos do `fga` pode mudar entre versões maiores.
 - Os nomes e os dados são fictícios.
 
 ## Para pensar

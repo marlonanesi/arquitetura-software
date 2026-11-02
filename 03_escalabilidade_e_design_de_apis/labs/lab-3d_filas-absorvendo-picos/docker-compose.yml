@@ -22,7 +22,9 @@ services:
     image: rabbitmq:3.13-management-alpine
     ports: ["15672:15672"]
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # check_port_connectivity só passa quando a porta 5672 (AMQP) já aceita conexões; o "ping" passa antes,
+      # e a API e o worker falhavam ao iniciar nessa janela.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
       timeout: 10s
       retries: 20
@@ -30,6 +32,7 @@ services:
   api:
     build: ./app
     image: lunalog/confirmacoes-api:1.0
+    restart: on-failure
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -38,6 +41,7 @@ services:
   worker:
     image: lunalog/confirmacoes-api:1.0
     command: ["python", "worker.py"]
+    restart: on-failure
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }

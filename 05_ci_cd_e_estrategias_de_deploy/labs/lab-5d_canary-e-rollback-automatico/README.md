@@ -115,7 +115,7 @@ kubectl -n canario wait --for=condition=complete job/trafego --timeout=300s
 kubectl -n canario logs job/trafego | tail -n 12
 ```
 
-O que observar: `http_req_failed` em **0,00%**, com as respostas divididas entre `1.0.0` e `2.0.0`. A promoção aconteceu sem ninguém decidir nada: o critério decidiu.
+O que observar: `http_req_failed` em **0,00%** (às vezes uma fração de 1%, de requisições que estavam em andamento quando um pod antigo foi encerrado; muito abaixo dos 5% do critério), com as respostas divididas entre `1.0.0` e `2.0.0`. A promoção aconteceu sem ninguém decidir nada: o critério decidiu.
 
 ### Cenário 2: uma versão com defeito
 

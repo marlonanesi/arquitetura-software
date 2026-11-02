@@ -112,7 +112,7 @@ O histórico antigo pode mentir: um arquivo que era um hotspot há dois anos pod
 docker compose run --rm analise python hotspots.py /dados/repo-demo --desde "3 months ago" --saida /tmp/recente
 ```
 
-A lista muda: o `precificacao.py` continua em primeiro (28 mudanças recentes), e o `notificacao.py` some (nenhuma mudança no período). **O período é uma decisão**: use janelas curtas (3 a 6 meses) para priorizar a próxima iniciativa e longas (12 meses ou mais) para entender a história.
+A lista muda: o `precificacao.py` continua em primeiro (28 mudanças recentes), e o `notificacao.py` some (nenhuma mudança no período). (O repositório de demonstração termina poucos dias antes do dia em que você roda o lab, então a janela de "3 meses atrás" funciona em qualquer data; os números dessa janela podem variar em uma ou duas mudanças.) **O período é uma decisão**: use janelas curtas (3 a 6 meses) para priorizar a próxima iniciativa e longas (12 meses ou mais) para entender a história.
 
 ### Passo 5: no repositório do aluno
 

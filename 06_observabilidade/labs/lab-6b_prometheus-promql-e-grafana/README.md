@@ -69,7 +69,7 @@ Agora a taxa, que é o que interessa:
 sum(rate(http_server_duration_milliseconds_count[1m])) by (job)
 ```
 
-`rate` transforma o contador em requisições por segundo na janela de 1 minuto, e `sum by (job)` agrega por serviço.
+`rate` transforma o contador em requisições por segundo na janela de 1 minuto, e `sum by (job)` agrega por serviço. Como a janela é de 1 minuto, os valores só ficam estáveis (perto de 10 por segundo, com a carga de 10 req/s) depois de uns 90 segundos de carga: antes disso, a taxa aparece menor.
 
 ### Cenário 2: o método RED
 
@@ -94,7 +94,7 @@ sum(rate(http_server_duration_milliseconds_count{job="cotacao"}[1m]))
 histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds_bucket{job="cotacao"}[1m])) by (le))
 ```
 
-O que observar: a taxa de erro fica perto de 10%, a mesma proporção das chamadas injetadas. A latência é um **histograma**: o `histogram_quantile` estima o percentil a partir dos baldes (`le`). Repare que o erro aparece em todos os serviços da cadeia, porque cada um repassa a falha do seguinte como `502`. Para achar a origem, o trace do lab 6A mostra qual serviço falhou primeiro.
+O que observar: a taxa de erro fica perto de 10%, a mesma proporção das chamadas injetadas (a janela de 1 minuto leva uns 60 segundos para encher; depois, o valor oscila entre uns 8% e 13%, porque a falha é sorteada). A taxa fica perto de 10 por segundo, e o p95 em algumas centenas de milissegundos. A latência é um **histograma**: o `histogram_quantile` estima o percentil a partir dos baldes (`le`). Repare que o erro aparece em todos os serviços da cadeia, porque cada um repassa a falha do seguinte como `502`. Para achar a origem, o trace do lab 6A mostra qual serviço falhou primeiro.
 
 ### Cenário 3: o dashboard
 
@@ -123,11 +123,11 @@ docker compose up -d cotacao
 docker compose run --rm k6 run -e TAXA=40 -e DURACAO=50s /scripts/carga-clientes.js
 ```
 
-Repita as duas consultas. O que observar: a métrica de cotações passa de **5 séries para mais de mil** em menos de um minuto, com apenas 2 mil requisições e 5 mil clientes possíveis. Cada valor novo de `cliente_id` cria uma série nova. Com 80 mil usuários, como na LunaLog, o resultado é um Prometheus que consome memória e disco sem parar e degrada o próprio monitoramento.
+Repita as duas consultas. O que observar: a métrica de cotações passa de **5 séries para mais de mil** em menos de um minuto (no ensaio, entre 1.450 e 1.670), com apenas 2 mil requisições e 5 mil clientes possíveis. O total do Prometheus (`prometheus_tsdb_head_series`) vai de uns 1.000 para uns 2.400. Cada valor novo de `cliente_id` cria uma série nova. Com 80 mil usuários, como na LunaLog, o resultado é um Prometheus que consome memória e disco sem parar e degrada o próprio monitoramento.
 
 A regra: rótulo só para valores de **poucas possibilidades** (destino, status, serviço). Identificadores de usuário, de pedido ou de requisição não são rótulos de métrica: ficam em logs e traces.
 
-Volte `METRICA_COM_CLIENTE` para `0` e rode `docker compose up -d cotacao`.
+Volte `METRICA_COM_CLIENTE` para `0` e rode `docker compose up -d cotacao`. Repare que as séries criadas **não somem na hora**: o `count(lunalog_cotacoes_total)` continua alto por uns 5 a 6 minutos depois do último pedido com cliente, porque as séries antigas só expiram depois desse tempo. Rótulo ruim cobra o preço mesmo depois de removido.
 
 ## Como limpar
 

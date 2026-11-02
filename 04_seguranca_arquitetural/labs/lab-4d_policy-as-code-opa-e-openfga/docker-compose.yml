@@ -13,14 +13,14 @@ x-servico: &servico
 
 services:
   opa:
-    image: openpolicyagent/opa:latest
+    image: openpolicyagent/opa:1.21.4
     command: ["run", "--server", "--addr=0.0.0.0:8181", "--watch", "--set=decision_logs.console=true", "/policies", "/data"]
     volumes:
       - ./policies:/policies:ro
       - ./data:/data:ro
 
   openfga:
-    image: openfga/openfga:latest
+    image: openfga/openfga:v1.22.0
     command: ["run"]
     healthcheck:
       test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=localhost:8081"]
@@ -30,7 +30,7 @@ services:
 
   # Cria a loja do OpenFGA com o modelo e as tuplas de store.fga.yaml e termina.
   fga-setup:
-    image: openfga/cli:latest
+    image: openfga/cli:v0.8.2
     command: ["store", "import", "--file", "/modelo/store.fga.yaml", "--api-url", "http://openfga:8080"]
     volumes:
       - ./fga:/modelo:ro
@@ -60,14 +60,14 @@ services:
       ENTREGAS: http://entregas:8000
 
   opa-test:
-    image: openpolicyagent/opa:latest
+    image: openpolicyagent/opa:1.21.4
     profiles: ["ferramentas"]
     command: ["test", "/policies", "-v"]
     volumes:
       - ./policies:/policies:ro
 
   fga:
-    image: openfga/cli:latest
+    image: openfga/cli:v0.8.2
     profiles: ["ferramentas"]
     environment:
       FGA_API_URL: http://openfga:8080

@@ -60,7 +60,7 @@ Na pasta deste lab:
 docker compose up -d --build
 ```
 
-Consulte uma tarifa duas vezes e veja a origem da resposta mudar de `banco` para `cache`:
+Consulte uma tarifa duas vezes e veja a origem da resposta mudar de `banco` para `cache` (no PowerShell, use `curl.exe` no lugar de `curl`, porque `curl` é um apelido de outro comando):
 
 ```bash
 curl -s "localhost:8000/tarifa/R001?estrategia=ttl-fixo"
@@ -94,7 +94,7 @@ docker compose run --rm k6 run -e ESTRATEGIA=ttl-fixo -e PERFIL=quente -e TAXA=3
 curl -s localhost:8000/stats/grafico
 ```
 
-O que observar: erros zeram e a latência cai para milissegundos na maioria das requisições. No gráfico, o banco quase não trabalha, **exceto nos picos periódicos**: são os instantes em que as chaves quentes expiram e dezenas de requisições vão ao banco ao mesmo tempo.
+O que observar: erros zeram e a latência cai para milissegundos na maioria das requisições. No gráfico, o banco quase não trabalha, **exceto nos picos**: o primeiro, nos 2 primeiros segundos, é o cache ainda vazio (60 a 70 consultas por segundo); os seguintes, a cada uns 10 segundos, são os instantes em que as chaves quentes expiram e dezenas de requisições vão ao banco ao mesmo tempo (entre 25 e 60).
 
 ### Cenário 3: expiração em massa, TTL fixo contra TTL com jitter
 
@@ -120,7 +120,7 @@ docker compose run --rm k6 run -e ESTRATEGIA=jitter-lock -e PERFIL=quente -e TAX
 curl -s localhost:8000/stats/grafico
 ```
 
-O que observar: o jitter sozinho ajuda pouco numa chave quente, porque uma única chave continua tendo um único instante de expiração. O lock resolve: quando a chave expira, uma requisição consulta o banco e as demais esperam alguns milissegundos pelo resultado dela. O pico cai para uma fração.
+O que observar: o jitter sozinho ajuda pouco numa chave quente, porque uma única chave continua tendo um único instante de expiração. O lock resolve: quando a chave expira, uma requisição consulta o banco e as demais esperam alguns milissegundos pelo resultado dela. O pico cai para a metade ou menos (28 a 36 contra 60 a 70, medidos no início da carga, com o cache vazio) e, depois do início, o banco fica abaixo de 20 consultas por segundo.
 
 ## Resultados de referência
 
@@ -131,7 +131,7 @@ Execução de referência: 300 requisições por segundo, 35 segundos, banco sim
 | quente | sem-cache | 64% | 3,2 s | 70 (saturado) |
 | quente | ttl-fixo | 0% | 152 ms | 70 |
 | quente | ttl-jitter | 0% | 152 ms | 59 |
-| quente | jitter-lock | 0% | 82 ms | 22 |
+| quente | jitter-lock | 0% | 82 a 125 ms | 22 a 36 |
 | uniforme | ttl-fixo | 1,4% | 978 ms | 70 |
 | uniforme | ttl-jitter | 0% | 151 ms | 34 |
 | uniforme | jitter-lock | 0% | 152 ms | 34 |

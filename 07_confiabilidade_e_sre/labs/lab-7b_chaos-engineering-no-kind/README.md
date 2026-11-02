@@ -91,7 +91,9 @@ O script `scripts/rodar-experimento.sh` executa as etapas de um experimento: con
 bash scripts/rodar-experimento.sh experimentos/e1-pod-kill.yaml
 ```
 
-Cada execução leva cerca de 90 segundos e termina com um quadro assim:
+No Windows, rode o script no **Git Bash** (o comando `bash` do PowerShell costuma ser o do WSL, que pode nem ter uma distribuição instalada).
+
+Cada execução leva cerca de 70 segundos (15 de tráfego normal, o ataque e o fim da medição de 60 s) e termina com um quadro assim:
 
 ```
 ===== RESULTADO DO EXPERIMENTO =====
@@ -164,7 +166,8 @@ bash scripts/rodar-experimento.sh experimentos/e4-ataque-grande-abortar.yaml sim
 
 Com `ABORTAR=sim`, o k6 interrompe o teste assim que o alvo protegido viola a hipótese (erros acima de 1%). O que observar:
 
-- O teste termina em **cerca de 20 segundos**, em vez de 60, com a mensagem `thresholds ... were crossed; ... stopping test prematurely`.
+- O teste termina em **cerca de 20 segundos** de medição (o script volta em uns 25 s), em vez de 60, com a mensagem `thresholds ... were crossed; ... stopping test prematurely`.
+- O pod `experimento-...` do Job fica em **Error** (e não em Completed) quando alguma hipótese é refutada: o k6 sai com erro se um `threshold` é violado. Nos experimentos em que o frágil falha, isso também acontece.
 - O script então remove o experimento (`kubectl delete -f`), e o Deployment reconstrói os pods.
 
 Este é o botão de emergência do chaos engineering: **raio de explosão pequeno** (um alvo, uma duração), **monitoramento durante o ataque** e **uma regra objetiva para abortar**. Em produção o gatilho viria do alerta de SLO, e o aborto removeria o objeto de caos (`kubectl delete`) automaticamente.
@@ -176,9 +179,9 @@ Valores obtidos no Kind v0.33 (1 control-plane e 2 workers), Chaos Mesh 2.8.6, 2
 | Experimento | Frágil (erros / p95) | Protegido (erros / p95 / degradadas) | Hipótese no protegido |
 |---|---|---|---|
 | 0. Sem falha (estado estacionário) | 0% / 10 ms | 0% / 11 ms / 0% | confirmada |
-| 1. Pod kill | 1,75% / 10 ms | 0,4% a 0,7% / 11 ms / 0% | confirmada, com folga pequena |
-| 2. Latência de 2 s na dependência | 31% a 41% / 5.000 ms | 0% / 508 ms / 49% | confirmada |
-| 3. Dependência fora do ar | 34% / 5.000 ms | 0% / 507 ms / 43% | confirmada |
+| 1. Pod kill | 1,6% a 1,8% / 11 ms | 0,3% a 0,7% / 11 ms / 0% | confirmada, com folga pequena |
+| 2. Latência de 2 s na dependência | 31% a 41% / 5.000 ms | 0% / 508 ms / 49% a 51% | confirmada |
+| 3. Dependência fora do ar | 34% / 5.000 ms | 0% / 507 ms / 42% a 43% | confirmada |
 | 4. Mata todos os pods (com abortar) | 0% | 2,6% e o teste abortou | refutada, e foi interrompido |
 
 No frágil, as hipóteses dos experimentos 1, 2 e 3 foram **refutadas**. A diferença entre as colunas é o valor das proteções do curso, medido.

@@ -45,7 +45,7 @@ flowchart LR
 - Docker Engine ou Docker Desktop (Compose v2)
 - Cerca de 1 GB de RAM livre
 - As portas 8501 a 8503 livres
-- Um shell Bash e `curl`
+- Um shell Bash e `curl`. No PowerShell, use `curl.exe` no lugar de `curl`, `Start-Sleep` no lugar de `sleep` e defina a variável do k6 com `$env:ESCOPO = 'global'` (apagando-a depois com `Remove-Item Env:ESCOPO`)
 
 ## Como executar
 
@@ -56,7 +56,7 @@ docker compose up -d --build
 for i in 1 2 3; do curl -s -D - -o /dev/null -H 'X-Api-Key: teste' localhost:8501/bucket | grep -iE "^HTTP|x-ratelimit|x-replica"; done
 ```
 
-Cada resposta traz `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-Replica` (qual réplica atendeu). O `Remaining` desce de uma resposta para a outra **mesmo trocando de réplica**: o contador é do Redis, não da réplica.
+Cada resposta traz `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-Replica` (qual réplica atendeu). O `Remaining` desce de uma resposta para a outra **mesmo trocando de réplica**: o contador é do Redis, não da réplica. (O Nginx tem vários workers, então a mesma réplica pode atender 2 ou 3 chamadas seguidas; no total, a divisão é de metade para cada uma.)
 
 ### Cenário 1: a virada da janela
 
@@ -130,10 +130,10 @@ ESCOPO=global docker compose --profile ferramentas run --rm k6
 ```
 ===== ISOLAMENTO (escopo=global) =====
 bugado   enviadas= 1501  aceitas=  33  bloqueadas(429)= 1468  (98% bloqueadas)
-normal   enviadas=   16  aceitas=   7  bloqueadas(429)=    9  (56% bloqueadas)
+normal   enviadas=   16  aceitas=   1  bloqueadas(429)=   15  (94% bloqueadas)
 ```
 
-O parceiro com bug esgota o balde de todos, e o parceiro **normal passa a ter 56% de requisições recusadas**, por culpa de outro. O limite global protege o servidor, mas não protege um cliente do outro. Por isso o limite precisa ser **por cliente** (e, em muitos sistemas, também global, como segunda linha).
+O parceiro com bug esgota o balde de todos, e o parceiro **normal passa a ter de 80% a 95% das requisições recusadas** (56% em uma execução anterior; varia de rodada para rodada), por culpa de outro. O limite global protege o servidor, mas não protege um cliente do outro. Por isso o limite precisa ser **por cliente** (e, em muitos sistemas, também global, como segunda linha).
 
 Veja o que o parceiro recebe ao ser bloqueado, e como deveria reagir:
 
@@ -172,7 +172,7 @@ Valores medidos em Docker Desktop (Windows 11, WSL2), limite de 10 por 5 segundo
 | Token bucket depois de 3 s de pausa | cerca de 6 a 7 requisições aceitas (reposição de 2 por segundo) |
 | Janela deslizante logo após a rajada | 100% bloqueada até as primeiras saírem da janela |
 | Limite por cliente, parceiro com bug | 97% bloqueado; parceiro normal: 0% bloqueado |
-| Limite global, parceiro com bug | parceiro normal: 56% bloqueado |
+| Limite global, parceiro com bug | parceiro normal: de 80% a 95% bloqueado |
 | Duas réplicas, contador em memória | 20 aceitas (o dobro do limite) |
 | Duas réplicas, contador no Redis | 10 aceitas |
 

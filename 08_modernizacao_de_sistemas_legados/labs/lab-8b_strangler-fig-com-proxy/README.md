@@ -136,11 +136,11 @@ Agora, o rollback. Suponha que o serviço novo apresentou um problema em produç
 docker compose exec proxy nginx -s reload
 ```
 
-O que observar: no instante do `reload`, todo o tráfego volta para o legado. **O rollback é uma linha de configuração.** Isso é possível porque o legado continua intacto e funcionando durante toda a migração: ele só é desligado quando a última rota migra, e não antes.
+O que observar: logo depois do `reload`, todo o tráfego volta para o legado (o `reload` é gracioso: os processos antigos do Nginx terminam o que já atendiam, então espere cerca de 1 segundo antes de contar de novo; no ensaio, sem essa espera, 3 de 10 chamadas ainda foram ao serviço novo). **O rollback é uma linha de configuração.** Isso é possível porque o legado continua intacto e funcionando durante toda a migração: ele só é desligado quando a última rota migra, e não antes.
 
 ### Passo 5: o que falta migrar
 
-Migre `/relatorios` do mesmo jeito (bloco `$relatorios_pct`) e `/clientes` (bloco `$clientes_pct`, e apague a linha do `sombra-clientes.conf` para parar de copiar o tráfego). Depois consulte:
+Migre `/relatorios` do mesmo jeito (bloco `$relatorios_pct`) e `/clientes` (bloco `$clientes_pct`, e apague a linha do `sombra-clientes.conf` para parar de copiar o tráfego). **Migre também a `/cotacao` de novo** (`*      novo;`): depois do rollback do passo anterior, ela voltou ao legado. Consulte as estatísticas do legado antes das mudanças e depois delas:
 
 ```bash
 curl -s localhost:9081/estatisticas

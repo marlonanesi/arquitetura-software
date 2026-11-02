@@ -84,26 +84,27 @@ Troque para `ERRO_VIASUL_PCT=1`, aplique com `docker compose up -d` e espere cer
 O que observar:
 
 - No `receptor`, aparecem alertas **por causa** (`ErroEmServico`) para alguns serviços da cadeia. Alguém no canal de ruído foi avisado.
-- Os alertas de SLO **não disparam**: 1% de erro significa burn rate 1, exatamente o ritmo permitido. O orçamento não está em risco.
+- Os alertas de SLO **não disparam**: 1% de erro significa burn rate 1, exatamente o ritmo permitido, que esgotaria o orçamento só no fim da janela. No painel, o orçamento restante **desce devagar** (no ensaio, para uns 50% em 2 minutos e meio; com o lab recém-subido a janela de 15 minutos ainda tem pouco histórico, então o número cai mais rápido do que cairia em regime). Não há urgência: nada exige ação agora.
+- Os alertas por causa chegam em duas levas: uns 50 segundos depois da mudança, para 2 serviços, e uns 90 segundos depois, para os 4.
 - Pergunta: esse alerta por causa merece acordar alguém? O usuário foi afetado de forma que importa?
 
 ### Cenário 3: um incidente de verdade (30% de erro)
 
 Troque para `ERRO_VIASUL_PCT=30`, aplique e espere cerca de 2 minutos. Acompanhe o `receptor`.
 
-O que observar, em ordem de chegada:
+O que observar, em ordem de chegada (a partir do lab saudável, com a carga ligada há alguns minutos):
 
-1. Quatro alertas **por causa**, um por serviço da cadeia (`cotacao`, `rotas`, `tarifas`, `transportadoras`), para o **mesmo** incidente.
-2. `SLOQueimaRapida` com destino **PLANTAO**: um único alerta, dizendo que o orçamento de erro está sendo consumido 10 vezes mais rápido que o permitido. Esse é o que acorda alguém.
-3. `OrcamentoDeErroBaixo` e `SLOQueimaLenta` com destino **TICKET**: viram trabalho para o dia útil, sem acordar ninguém. O primeiro traz a política: congelar deploys de funcionalidades até recuperar o orçamento.
+1. Uns 30 segundos depois: quatro alertas **por causa**, um por serviço da cadeia (`cotacao`, `rotas`, `tarifas`, `transportadoras`), para o **mesmo** incidente. Se você veio do Cenário 2 sem esperar a recuperação, esses alertas já estavam disparando e **não aparecem de novo**.
+2. Uns 50 segundos depois: `OrcamentoDeErroBaixo` com destino **TICKET**: o orçamento caiu abaixo de 25%. Traz a política: congelar deploys de funcionalidades até recuperar o orçamento.
+3. Uns 80 segundos depois: `SLOQueimaRapida` com destino **PLANTAO**: um único alerta, dizendo que o orçamento de erro está sendo consumido 10 vezes mais rápido que o permitido. Esse é o que acorda alguém. No mesmo instante, `SLOQueimaLenta` com destino **TICKET**: vira trabalho para o dia útil, sem acordar ninguém.
 
-No painel de SLO, o orçamento restante vai a zero e fica negativo: o SLO da janela foi violado. O gráfico de burn rate mostra a janela curta subindo antes da longa.
+No painel de SLO, o orçamento restante vai a zero e fica negativo (na casa de -1.000% ou mais): o SLO da janela foi violado. O gráfico de burn rate mostra a janela curta subindo antes da longa.
 
 ### Cenário 4: recuperação
 
 Volte para `ERRO_VIASUL_PCT=0`, aplique e espere uns 3 minutos.
 
-O que observar: o alerta de plantão é resolvido primeiro (as janelas dele são curtas), depois os alertas por causa e o de queima lenta. O `OrcamentoDeErroBaixo` **continua disparando** por mais tempo, porque o orçamento só se recupera quando os erros saem da janela de 15 minutos do SLO. Na prática, é por isso que a política de congelamento de deploys dura enquanto o orçamento está baixo, e não só enquanto o incidente dura.
+O que observar: o alerta de plantão é resolvido primeiro, uns 45 segundos depois (as janelas dele são curtas), depois os alertas por causa (uns 70 segundos) e o de queima lenta (uns 2 minutos e 15 segundos). O `OrcamentoDeErroBaixo` **continua disparando** por mais tempo, porque o orçamento só se recupera quando os erros saem da janela de 15 minutos do SLO. Na prática, é por isso que a política de congelamento de deploys dura enquanto o orçamento está baixo, e não só enquanto o incidente dura.
 
 ## Resultados de referência
 
@@ -114,9 +115,9 @@ Medidos em execuções do próprio lab, com a carga de 10 requisições por segu
 | 0% de erro | 0 | 0 | |
 | 1% de erro | 2 a 4 (ruído) | 0 | ruído |
 | 30% de erro | 4 (um por serviço) | 3 (1 page, 2 tickets) | plantão e tickets |
-| Recuperação | resolvidos em ~1 min | page resolvido em ~2 min, ticket em ~4 min | |
+| Recuperação | resolvidos em ~1 min | page resolvido em ~45 s, ticket de queima lenta em ~2 min 15 s; o de orçamento baixo continua | |
 
-O primeiro alerta de plantão disparou cerca de 50 segundos depois do início do incidente.
+No incidente de 30%, os alertas chegaram nesta ordem (medido duas vezes, a partir do lab saudável): por causa, aos 30 s; `OrcamentoDeErroBaixo`, aos 50 s; e `SLOQueimaRapida` e `SLOQueimaLenta`, aos 80 s. O alerta de plantão disparou cerca de 80 segundos depois do início do incidente.
 
 ## Como limpar
 

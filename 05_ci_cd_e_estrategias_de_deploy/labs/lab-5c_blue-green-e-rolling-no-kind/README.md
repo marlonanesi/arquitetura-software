@@ -50,6 +50,7 @@ flowchart LR
 - Docker Engine ou Docker Desktop
 - [kind](https://kind.sigs.k8s.io/) e `kubectl` instalados
 - Cerca de 4 GB de RAM livres
+- Os NodePorts 30080 e 30081 livres. Se os labs 2C (namespace `lunalog`) ou 3A (namespace `escala`) ainda estiverem no ar, apague os namespaces deles antes: `kubectl delete namespace lunalog escala --ignore-not-found`. Os Services deles usam as mesmas portas, e o `kubectl apply` falha com `provided port is already allocated`
 - O cluster Kind da trilha (lab 2C). Se ainda não existe:
 
 ```bash

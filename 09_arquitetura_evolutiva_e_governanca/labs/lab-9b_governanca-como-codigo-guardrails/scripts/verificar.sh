@@ -14,7 +14,7 @@ for c in python3 python; do
 done
 [ -n "$PY" ] || { echo "Python 3 nao encontrado"; exit 1; }
 RAIZ="$(pwd -W 2>/dev/null || pwd)"
-CONFTEST="docker run --rm -v $RAIZ:/p -w /p openpolicyagent/conftest:latest"
+CONFTEST="docker run --rm -v $RAIZ:/p -w /p openpolicyagent/conftest:v0.71.1"
 FALHAS=0
 etapa() { echo; echo "== $1"; }
 passo() { "$@" || FALHAS=$((FALHAS+1)); }

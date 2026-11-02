@@ -32,7 +32,7 @@ services:
     restart: "no"
 
   flagd:
-    image: ghcr.io/open-feature/flagd:latest
+    image: ghcr.io/open-feature/flagd:v0.18.2
     command: ["start", "--uri", "file:/etc/flagd/flags.json"]
     volumes:
       - flags:/etc/flagd

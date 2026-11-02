@@ -161,28 +161,28 @@ Os labs são publicados na Udemy de forma **progressiva e incremental**: o repos
 |---|---|---|---|---|
 | 01 | [1A](01_fundamentos_arquitetura_software/labs/lab-1a_arquitetura-como-codigo-c4-e-adr/) | Arquitetura como código: C4 e ADR versionados | Compose e Python | Publicada |
 | 02 | [2A](02_estilos_arquiteturais/labs/lab-2a_monolito-modular-vs-distribuido/) | Monólito modular e monólito distribuído lado a lado | Compose | Publicada |
-| 02 | [2B](02_estilos_arquiteturais/labs/lab-2b_eda-ordem-idempotencia-e-dlq/) | EDA na prática: ordem, idempotência e dead-letter queue | Compose | Pendente |
-| 02 | [2C](02_estilos_arquiteturais/labs/lab-2c_kind-stateless-e-health-checks/) | Kubernetes local com Kind: stateless, imagem imutável e health checks | Kind | Pendente |
-| 02 | [2D](02_estilos_arquiteturais/labs/lab-2d_pod-patterns-sidecar-ambassador-adapter/) | Padrões de pod: sidecar, ambassador e adapter | Kind | Pendente |
-| 02 | [2E](02_estilos_arquiteturais/labs/lab-2e_hexagonal-portas-e-adaptadores/) | Arquitetura hexagonal: trocando o adaptador sem tocar no domínio | Python local (Docker opcional) | Pendente |
-| 02 | [2F](02_estilos_arquiteturais/labs/lab-2f_cqrs-e-event-sourcing/) | CQRS e Event Sourcing sobre o domínio hexagonal | Compose | Pendente |
-| 03 | [3A](03_escalabilidade_e_design_de_apis/labs/lab-3a_hpa-escala-horizontal/) | Escala horizontal no Kind: HPA sob carga e o custo do estado local | Kind | Pendente |
-| 03 | [3B](03_escalabilidade_e_design_de_apis/labs/lab-3b_load-balancing-algoritmos-l4-l7/) | Load balancing: algoritmos, afinidade de sessão e camadas L4 e L7 | Compose | Pendente |
-| 03 | [3C](03_escalabilidade_e_design_de_apis/labs/lab-3c_cache-aside-stampede-e-jitter/) | Cache-aside, cache stampede e TTL com jitter | Compose | Pendente |
-| 03 | [3D](03_escalabilidade_e_design_de_apis/labs/lab-3d_filas-absorvendo-picos/) | Filas absorvendo picos: escrita direta versus fila | Compose | Pendente |
-| 03 | [3E](03_escalabilidade_e_design_de_apis/labs/lab-3e_rate-limiting-algoritmos/) | Rate limiting: janela fixa, janela deslizante e token bucket | Compose | Pendente |
-| 03 | [3F](03_escalabilidade_e_design_de_apis/labs/lab-3f_circuit-breaker-e-bulkhead/) | Circuit breaker e bulkhead com falhas injetadas | Compose | Pendente |
-| 04 | [4A](04_seguranca_arquitetural/labs/lab-4a_vault-envelope-encryption-e-rotacao/) | Envelope encryption, rotação de chaves e credenciais dinâmicas com Vault | Compose | Pendente |
-| 04 | [4B](04_seguranca_arquitetural/labs/lab-4b_oidc-pkce-com-keycloak/) | OAuth 2.1 e OpenID Connect: Authorization Code com PKCE passo a passo | Compose | Pendente |
-| 04 | [4C](04_seguranca_arquitetural/labs/lab-4c_jwt-armadilhas/) | JWT: ataques reproduzíveis e validação correta | Compose | Pendente |
-| 04 | [4D](04_seguranca_arquitetural/labs/lab-4d_policy-as-code-opa-e-openfga/) | Policy-as-code: a mesma regra em RBAC, ABAC e ReBAC com OPA e OpenFGA | Compose | Pendente |
-| 04 | [4E](04_seguranca_arquitetural/labs/lab-4e_stride-sistema-inseguro/) | STRIDE na prática: diagnóstico e redesign de um sistema inseguro | Compose | Pendente |
-| 04 | [4F](04_seguranca_arquitetural/labs/lab-4f_zero-trust-mtls-no-kind/) | Zero trust no Kind: mTLS automático e autorização entre serviços | Kind e Istio | Pendente |
-| 05 | [5A](05_ci_cd_e_estrategias_de_deploy/labs/lab-5a_contract-testing-com-pact/) | Consumer-driven contracts com Pact | Compose | Pendente |
-| 05 | [5B](05_ci_cd_e_estrategias_de_deploy/labs/lab-5b_pipeline-maduro-antes-e-depois/) | Pipeline CI/CD: do pipeline com problemas ao pipeline maduro | GitHub Actions, com simulação local em Docker | Pendente |
-| 05 | [5C](05_ci_cd_e_estrategias_de_deploy/labs/lab-5c_blue-green-e-rolling-no-kind/) | Blue/green e rolling update no Kind | Kind | Pendente |
-| 05 | [5D](05_ci_cd_e_estrategias_de_deploy/labs/lab-5d_canary-e-rollback-automatico/) | Canary release com análise automática e rollback | Kind | Pendente |
-| 05 | [5E](05_ci_cd_e_estrategias_de_deploy/labs/lab-5e_expand-contract-migracao-reversivel/) | Expand-contract: migração de schema reversível em quatro fases | Compose | Pendente |
+| 02 | [2B](02_estilos_arquiteturais/labs/lab-2b_eda-ordem-idempotencia-e-dlq/) | EDA na prática: ordem, idempotência e dead-letter queue | Compose | Publicada |
+| 02 | [2C](02_estilos_arquiteturais/labs/lab-2c_kind-stateless-e-health-checks/) | Kubernetes local com Kind: stateless, imagem imutável e health checks | Kind | Publicada |
+| 02 | [2D](02_estilos_arquiteturais/labs/lab-2d_pod-patterns-sidecar-ambassador-adapter/) | Padrões de pod: sidecar, ambassador e adapter | Kind | Publicada |
+| 02 | [2E](02_estilos_arquiteturais/labs/lab-2e_hexagonal-portas-e-adaptadores/) | Arquitetura hexagonal: trocando o adaptador sem tocar no domínio | Python local (Docker opcional) | Publicada |
+| 02 | [2F](02_estilos_arquiteturais/labs/lab-2f_cqrs-e-event-sourcing/) | CQRS e Event Sourcing sobre o domínio hexagonal | Compose | Publicada |
+| 03 | [3A](03_escalabilidade_e_design_de_apis/labs/lab-3a_hpa-escala-horizontal/) | Escala horizontal no Kind: HPA sob carga e o custo do estado local | Kind | Publicada |
+| 03 | [3B](03_escalabilidade_e_design_de_apis/labs/lab-3b_load-balancing-algoritmos-l4-l7/) | Load balancing: algoritmos, afinidade de sessão e camadas L4 e L7 | Compose | Publicada |
+| 03 | [3C](03_escalabilidade_e_design_de_apis/labs/lab-3c_cache-aside-stampede-e-jitter/) | Cache-aside, cache stampede e TTL com jitter | Compose | Publicada |
+| 03 | [3D](03_escalabilidade_e_design_de_apis/labs/lab-3d_filas-absorvendo-picos/) | Filas absorvendo picos: escrita direta versus fila | Compose | Publicada |
+| 03 | [3E](03_escalabilidade_e_design_de_apis/labs/lab-3e_rate-limiting-algoritmos/) | Rate limiting: janela fixa, janela deslizante e token bucket | Compose | Publicada |
+| 03 | [3F](03_escalabilidade_e_design_de_apis/labs/lab-3f_circuit-breaker-e-bulkhead/) | Circuit breaker e bulkhead com falhas injetadas | Compose | Publicada |
+| 04 | [4A](04_seguranca_arquitetural/labs/lab-4a_vault-envelope-encryption-e-rotacao/) | Envelope encryption, rotação de chaves e credenciais dinâmicas com Vault | Compose | Publicada |
+| 04 | [4B](04_seguranca_arquitetural/labs/lab-4b_oidc-pkce-com-keycloak/) | OAuth 2.1 e OpenID Connect: Authorization Code com PKCE passo a passo | Compose | Publicada |
+| 04 | [4C](04_seguranca_arquitetural/labs/lab-4c_jwt-armadilhas/) | JWT: ataques reproduzíveis e validação correta | Compose | Publicada |
+| 04 | [4D](04_seguranca_arquitetural/labs/lab-4d_policy-as-code-opa-e-openfga/) | Policy-as-code: a mesma regra em RBAC, ABAC e ReBAC com OPA e OpenFGA | Compose | Publicada |
+| 04 | [4E](04_seguranca_arquitetural/labs/lab-4e_stride-sistema-inseguro/) | STRIDE na prática: diagnóstico e redesign de um sistema inseguro | Compose | Publicada |
+| 04 | [4F](04_seguranca_arquitetural/labs/lab-4f_zero-trust-mtls-no-kind/) | Zero trust no Kind: mTLS automático e autorização entre serviços | Kind e Istio | Publicada |
+| 05 | [5A](05_ci_cd_e_estrategias_de_deploy/labs/lab-5a_contract-testing-com-pact/) | Consumer-driven contracts com Pact | Compose | Publicada |
+| 05 | [5B](05_ci_cd_e_estrategias_de_deploy/labs/lab-5b_pipeline-maduro-antes-e-depois/) | Pipeline CI/CD: do pipeline com problemas ao pipeline maduro | GitHub Actions, com simulação local em Docker | Publicada |
+| 05 | [5C](05_ci_cd_e_estrategias_de_deploy/labs/lab-5c_blue-green-e-rolling-no-kind/) | Blue/green e rolling update no Kind | Kind | Publicada |
+| 05 | [5D](05_ci_cd_e_estrategias_de_deploy/labs/lab-5d_canary-e-rollback-automatico/) | Canary release com análise automática e rollback | Kind | Publicada |
+| 05 | [5E](05_ci_cd_e_estrategias_de_deploy/labs/lab-5e_expand-contract-migracao-reversivel/) | Expand-contract: migração de schema reversível em quatro fases | Compose | Publicada |
 | 06 | [6A](06_observabilidade/labs/lab-6a_opentelemetry-ponta-a-ponta/) | OpenTelemetry ponta a ponta: logs, métricas e traces | Compose | Pendente |
 | 06 | [6B](06_observabilidade/labs/lab-6b_prometheus-promql-e-grafana/) | Prometheus, PromQL e Grafana: métricas RED e dashboard efetivo | Compose | Pendente |
 | 06 | [6C](06_observabilidade/labs/lab-6c_alertas-por-slo-burn-rate/) | Alertas por SLO: burn rate e error budget | Compose | Pendente |

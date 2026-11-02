@@ -130,7 +130,7 @@ docker compose exec -T standby psql -U lunalog -d lunalog -c "SELECT pg_promote(
 docker compose exec -T standby psql -U lunalog -d lunalog -At -c "SELECT pg_is_in_recovery(), max(id) FROM entregas"
 ```
 
-O que observar: a promoção leva cerca de **1 a 2 segundos** (RTO) e o `max(id)` do standby é igual ou próximo ao último id confirmado (RPO de zero a poucas linhas, o atraso da replicação assíncrona).
+O que observar: a promoção leva **menos de 2 segundos** (RTO; no ensaio, de 0,4 a 1,5 s) e o `max(id)` do standby é igual ou próximo ao último id confirmado (RPO de zero a poucas linhas, o atraso da replicação assíncrona). Ele pode até ser 1 ou 2 maior que o id que você anotou, porque o log do `escritor` chega com um pequeno atraso.
 
 **Estratégia B: restaurar do backup mais o WAL arquivado**, sem alvo (reproduz tudo que foi arquivado):
 
@@ -143,7 +143,10 @@ docker compose exec -T restaurado psql -U lunalog -d lunalog -At -c "SELECT max(
 O que observar:
 
 - O log termina com `PRONTO. RTO medido ... segundos`.
-- O `max(id)` fica **abaixo** do último id confirmado. A diferença são as gravações que estavam no segmento de WAL ainda não arquivado quando o disco foi perdido. Com o arquivamento forçado a cada 10 segundos e 10 gravações por segundo, a perda típica fica entre 0 e cerca de 100 linhas. Esse é o RPO da estratégia.
+- O `max(id)` fica **abaixo** do último id confirmado. A diferença são as gravações que estavam no segmento de WAL ainda não arquivado quando o disco foi perdido. Com o arquivamento forçado a cada 10 segundos e uma gravação a cada 0,1 segundo, a perda típica fica entre 0 e cerca de 100 linhas (no ensaio, de 22 a 53). Esse é o RPO da estratégia.
+- O RTO medido pelo script fica em **1 a 3 segundos** (banco pequeno).
+
+**Um detalhe que vale conferir (se você fez o Cenário 1 antes):** rode `SELECT count(*), min(id) FROM entregas` no standby promovido e no banco restaurado. O `min(id)` não é 1: as linhas apagadas pelo `DELETE` do Cenário 1 continuam apagadas **nos dois**. O erro humano foi replicado para o standby e reproduzido do WAL arquivado. Uma réplica, sozinha, não protege contra erro humano; só a restauração para um ponto **antes** do erro (PITR) o desfaz.
 
 ## Resultados de referência
 
@@ -151,8 +154,8 @@ Execução de referência deste lab (banco de cerca de 30 MB, uma gravação a c
 
 | Estratégia | RTO medido | Linhas perdidas | RPO equivalente | Custo de manter |
 |---|---|---|---|---|
-| Standby promovido | cerca de 1,5 s | 0 | próximo de zero (atraso da replicação) | um segundo banco ligado o tempo todo |
-| Backup mais WAL arquivado | cerca de 3 s | 37 | cerca de 4 s de escrita (limite: o intervalo de arquivamento) | armazenamento de backup e de WAL |
+| Standby promovido | de 0,4 a 1,5 s | 0 | próximo de zero (atraso da replicação) | um segundo banco ligado o tempo todo |
+| Backup mais WAL arquivado | de 1 a 3 s | de 22 a 53 | de 3 a 7 s de escrita (limite: o intervalo de arquivamento, 10 s) | armazenamento de backup e de WAL |
 
 **Atenção ao RTO do backup.** O banco do lab tem 30 MB, e a restauração leva segundos. O RTO de uma restauração cresce com o tamanho do banco e com a quantidade de WAL a reproduzir: um banco de terabytes leva horas, como o caso da LunaLog (6 horas). Por isso o RTO precisa ser **testado com o tamanho real dos dados**, e não estimado.
 

@@ -10,7 +10,7 @@ for c in python3 python; do
   if "$c" -c 'import sys' >/dev/null 2>&1; then PY="$c"; break; fi
 done
 RAIZ="$(pwd -W 2>/dev/null || pwd)"
-CONFTEST="docker run --rm -v $RAIZ:/p -w /p openpolicyagent/conftest:latest"
+CONFTEST="docker run --rm -v $RAIZ:/p -w /p openpolicyagent/conftest:v0.71.1"
 
 echo "== ADRs invalidos";                $PY scripts/verificar_adrs.py exemplos-invalidos/adrs --sem-indice
 echo; echo "== Pull request sem checklist";      $PY scripts/verificar_pr.py exemplos-pr/sem-checklist.md

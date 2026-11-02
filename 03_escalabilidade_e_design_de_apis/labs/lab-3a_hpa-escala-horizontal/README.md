@@ -17,7 +17,7 @@ O cenário é o da LunaLog, três dias antes da Black Friday: o serviço de trac
 ## O que você vai ver
 
 - O mesmo serviço **sem** autoscaler, saturado: latência na casa dos segundos
-- O **HPA** (Horizontal Pod Autoscaler) criando réplicas conforme o uso de CPU, de 1 para 7, e a latência voltando ao normal
+- O **HPA** (Horizontal Pod Autoscaler) criando réplicas conforme o uso de CPU, de 1 até 8, e a latência voltando ao normal
 - O **tempo de reação** do autoscaler: a escala não é instantânea, e esse atraso é custo real
 - O **estado local** no mundo escalado: sessões em memória fazendo o usuário "perder o login" aleatoriamente, e o mesmo serviço com as sessões no Redis
 - O **gargalo atrás** da API: 2 ou 8 réplicas da API dão o mesmo resultado ruim, porque o limite está no banco. Escalar o gargalo resolve
@@ -50,6 +50,12 @@ flowchart LR
 
 ```bash
 kind create cluster --config ../../../02_estilos_arquiteturais/labs/lab-2c_kind-stateless-e-health-checks/kind/cluster.yaml
+```
+
+- Se você acabou de fazer o lab 2C no mesmo cluster, apague o namespace dele antes: o Service `comprovantes` ocupa a porta de nó 30080, a mesma da API deste lab, e o `kubectl apply` falha com `provided port is already allocated`.
+
+```bash
+kubectl delete namespace lunalog --ignore-not-found
 ```
 
 ## Como executar
@@ -85,16 +91,25 @@ A API também fica acessível no seu computador em http://localhost:8080.
 
 ### Cenário 1: carga sem autoscaler
 
-Uma réplica, 40 requisições por segundo durante 60 segundos:
+Uma réplica, 40 requisições por segundo durante 60 segundos. O manifest vem com 120 s (a duração do Cenário 2), então aqui trocamos para 60 s no caminho:
 
 ```bash
-kubectl apply -f manifests/20-job-cotacao.yaml
+# Linux, macOS e WSL2
+sed 's/120s/60s/' manifests/20-job-cotacao.yaml | kubectl apply -f -
+```
+
+```powershell
+# PowerShell
+(Get-Content manifests/20-job-cotacao.yaml) -replace '120s','60s' | kubectl apply -f -
+```
+
+```bash
 kubectl -n escala wait --for=condition=complete job/k6-cotacao --timeout=300s
 kubectl -n escala logs job/k6-cotacao | tail -n 20
 kubectl -n escala top pods
 ```
 
-(O manifest está configurado para 120 s; para a comparação, a execução de referência usou 60 s. Edite `DURACAO` se quiser.) O que observar: a latência média passa de 2 segundos, o p95 chega perto de 3 s, e o `top pods` mostra o pod da API **no limite de CPU (250m)**. Uma réplica só não dá conta: cada chamada custa 25 ms de CPU, e o pod tem teto de 250m, o que equivale a cerca de 10 requisições por segundo.
+O que observar: a latência média passa de 2 segundos (3 a 4 s em uma medição de referência, com p95 de 4 a 6 s; com 120 s a fila cresce e piora, com falhas), e o `top pods` mostra o pod da API **no limite de CPU (250m)**. Uma réplica só não dá conta: cada chamada custa 25 ms de CPU, e o pod tem teto de 250m, o que equivale a cerca de 10 requisições por segundo.
 
 ### Cenário 2: o HPA
 
@@ -109,13 +124,13 @@ kubectl -n escala get hpa tracking -w
 
 O que observar, ao longo dos 120 segundos:
 
-- O uso de CPU sobe (`81%/50%`, depois `250%/50%`) e a coluna de réplicas passa de 1 para 2, 5 e 7.
+- O uso de CPU sobe (`81%/50%`, depois `250%/50%`) e a coluna de réplicas passa de 1 para 3, 5, 7 e 8 (o máximo do HPA), uma linha nova a cada 15 segundos.
 - A cada passo, o autoscaler recalcula: `réplicas = réplicas atuais x (uso atual / alvo)`. Quando o uso médio volta para perto de 50%, ele para.
-- O resumo do k6 mostra **0% de falhas**, mas a latência média da rodada inteira ainda é alta (cerca de 3 s). O motivo está no próximo item.
+- O resumo do k6 mostra **0% de falhas**, mas a latência média da rodada inteira ainda é alta (de 2 a 6 s, conforme a máquina). O motivo está no próximo item.
 
 **O tempo de reação é custo.** Do início da carga até a estabilização foram cerca de 90 segundos: a métrica é coletada de tempos em tempos, o autoscaler decide, o Kubernetes agenda os pods e eles precisam ficar prontos. Durante esse intervalo, os usuários sofrem. Escala horizontal responde a **tendências**, não a picos súbitos. Para picos previsíveis (a Black Friday!), a resposta é escalar **antes**.
 
-Agora repita a carga com as réplicas já criadas:
+Agora repita a carga com as réplicas já criadas. Faça isso **logo depois que o Job anterior terminar**: sem carga, o HPA começa a reduzir as réplicas em cerca de um minuto, e a comparação perde o sentido.
 
 ```bash
 kubectl -n escala delete job k6-cotacao
@@ -124,7 +139,7 @@ kubectl -n escala wait --for=condition=complete job/k6-cotacao --timeout=300s
 kubectl -n escala logs job/k6-cotacao | tail -n 12
 ```
 
-O que observar: com as 7 réplicas prontas, a latência média cai para cerca de 110 ms e o p95 para cerca de 275 ms, contra mais de 2 segundos com uma réplica. O mesmo código, a mesma carga, o mesmo custo de CPU por chamada: só mudou o número de instâncias.
+O que observar: com as réplicas prontas (7 ou 8), a latência média cai para algumas dezenas de milissegundos (de 60 a 110 ms nas medições de referência) e o p95 para 150 a 280 ms, contra mais de 2 segundos com uma réplica. O mesmo código, a mesma carga, o mesmo custo de CPU por chamada: só mudou o número de instâncias.
 
 Depois que a carga termina, o HPA reduz as réplicas gradualmente (observe com `kubectl -n escala get hpa tracking -w`).
 
@@ -176,7 +191,7 @@ kubectl -n escala wait --for=condition=complete job/k6-consulta --timeout=300s
 kubectl -n escala logs job/k6-consulta | tail -n 14
 ```
 
-Repita com 8 réplicas da API (`kubectl -n escala scale deploy/tracking --replicas=8`, apagando o Job antes). O que observar: **o resultado é igualmente ruim**. Com 2 réplicas, 51% de falhas; com 8, 41%, e o p95 em 10 segundos (o limite de timeout) nos dois casos. A vazão total fica presa em torno de 60 requisições por segundo, a capacidade do banco. Mais réplicas da API só colocam mais requisições na fila do mesmo gargalo.
+Repita com 8 réplicas da API (`kubectl -n escala scale deploy/tracking --replicas=8`, apagando o Job antes). O que observar: **o resultado é igualmente ruim**. Com 2 réplicas, entre um terço e metade das requisições falha (32% a 51%); com 8, o mesmo (33% a 41%), e o p95 fica em 10 segundos (o limite de timeout) nos dois casos. A vazão total fica presa em torno de 60 requisições por segundo, a capacidade do banco. Mais réplicas da API só colocam mais requisições na fila do mesmo gargalo.
 
 Agora escale o gargalo, e não a API:
 
@@ -189,20 +204,20 @@ kubectl -n escala wait --for=condition=complete job/k6-consulta --timeout=300s
 kubectl -n escala logs job/k6-consulta | tail -n 14
 ```
 
-O que observar: p95 de cerca de 44 ms e **zero falhas**, a 80 requisições por segundo. Escalar horizontalmente funciona quando o gargalo é o que você escala.
+O que observar: p95 de 40 a 50 ms e **zero falhas**, a 80 requisições por segundo. Escalar horizontalmente funciona quando o gargalo é o que você escala.
 
 ## Resultados de referência
 
 | Cenário | Latência média | p95 | Falhas |
 |---|---|---|---|
-| 1 réplica, 40 req/s | 2,2 s | 2,9 s | 7% |
-| HPA durante a escalada (1 para 7 réplicas) | 3,0 s | 3,9 s | 0% |
-| 7 réplicas prontas, 40 req/s | 0,11 s | 0,28 s | 0 a 1% |
+| 1 réplica, 40 req/s (60 s) | 2 a 4 s | 3 a 6 s | 0 a 7% |
+| HPA durante a escalada (1 para 8 réplicas, 120 s) | 2,5 a 6 s | 3,5 a 8 s | 0% |
+| 8 réplicas prontas, 40 req/s | 0,06 a 0,11 s | 0,15 a 0,28 s | 0 a 1% |
 | Sessões em memória, 3 réplicas | | | 6 de 10 consultas com 401 |
 | Sessões no Redis, 3 réplicas | | | 0 de 10 |
-| `/consulta` 80 req/s, API x2, banco x1 | 7,6 s | 10 s | 51% |
-| `/consulta` 80 req/s, API x8, banco x1 | 5,6 s | 10 s | 41% |
-| `/consulta` 80 req/s, API x8, banco x3 | 0,03 s | 0,04 s | 0% |
+| `/consulta` 80 req/s, API x2, banco x1 | 6,5 a 7,6 s | 10 s | 32 a 51% |
+| `/consulta` 80 req/s, API x8, banco x1 | 4,4 a 5,6 s | 10 s | 33 a 41% |
+| `/consulta` 80 req/s, API x8, banco x3 | 0,03 s | 0,04 a 0,05 s | 0% |
 
 Os números dependem da sua máquina; o padrão se mantém.
 

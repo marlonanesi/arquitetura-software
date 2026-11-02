@@ -154,8 +154,11 @@ kubectl -n loja exec deploy/relatorios -c cliente -- curl -s http://tracking:800
 
 Aplique a política: só a identidade da cobrança, e só o método `GET`.
 
+A política não vale no instante do `apply`: o controle (`istiod`) precisa empurrá-la para cada sidecar. Normalmente isso leva menos de 1 segundo, mas já aconteceu de levar mais, e quem chamou logo depois viu o POST da cobrança voltar com `501` (a aplicação respondeu, porque nada o negou ainda) e a relatórios ler os dados (`200`). Por isso o `sleep 5` abaixo, uma folga. Se mesmo assim vir `501` ou `200` onde esperava `403`, espere alguns segundos e repita a chamada.
+
 ```bash
 kubectl apply -f manifests/30-autorizacao.yaml
+sleep 5
 kubectl -n loja exec deploy/cobranca    -c cliente -- curl -s -w " http=%{http_code}\n" http://tracking:8000/
 kubectl -n loja exec deploy/cobranca    -c cliente -- curl -s -w " http=%{http_code}\n" -X POST http://tracking:8000/
 kubectl -n loja exec deploy/relatorios  -c cliente -- curl -s -w " http=%{http_code}\n" http://tracking:8000/

@@ -276,6 +276,7 @@ lab-9c_migracao-incremental-ponta-a-ponta/
 
 ## Limites deste lab
 
+- A imagem do **flagd** está fixada na versão `v0.18.2` no `docker-compose.yml` (a tag `latest` dele é construída a partir do ramo principal do projeto, e pode mudar sem aviso). Para experimentar uma versão mais nova, troque a tag e refaça a jornada.
 - As **flags** ficam em um arquivo que o flagd recarrega. Em produção, use um serviço de flags com **revisão, auditoria e permissões** (uma flag mal posta derruba o sistema tanto quanto um deploy ruim), e trate as flags de migração como **temporárias**: remova-as depois da migração, para não virarem débito.
 - O **guardião** olha uma janela de 10 segundos e um único sinal (a taxa de erros). Um critério real combina vários (latência, saturação, erros de negócio) e se compara com a linha de base do legado, com janelas maiores para evitar falsos alarmes.
 - A **liberação gradual por usuário** depende de um identificador estável (`X-Usuario`). Em produção, ele vem do token do usuário. Atenção a clientes sem identificação (anônimos): precisam de uma regra à parte.

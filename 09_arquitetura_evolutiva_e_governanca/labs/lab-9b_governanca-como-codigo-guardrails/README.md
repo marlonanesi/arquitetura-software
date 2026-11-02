@@ -180,7 +180,7 @@ O que observar:
 Uma regra de governança com um erro de lógica barra o que não devia ou, pior, deixa passar o que devia barrar. Por isso as políticas têm testes unitários (`politicas/k8s_test.rego`, `politicas/dockerfile_test.rego`):
 
 ```bash
-docker run --rm -v "$PWD:/p" -w /p openpolicyagent/conftest:latest verify -p politicas
+docker run --rm -v "$PWD:/p" -w /p openpolicyagent/conftest:v0.71.1 verify -p politicas
 ```
 
 `15 tests, 15 passed`: um manifest conforme não gera reprovações; cada regra dispara no caso certo; réplica única só avisa; uma exceção vigente dispensa e uma vencida reprova. Uma mudança em uma política que quebre um desses testes **não passa no CI**. É o princípio da aula 4.10 (policy-as-code) aplicado à governança.
