@@ -1,10 +1,13 @@
 # Lab 10A: Kit de facilitação: DACI, ADR ao vivo e reescrita de code review com CNV
 
-Aula prática da seção 10 (Liderança Técnica e Comunicação), depois da aula 10.5.
+Kit prático de referência da seção 10 (Liderança Técnica e Comunicação), para usar depois da aula 10.5.
+
+**Este lab não tem aula gravada.** Diferente dos labs das seções 01 a 09, ele não é uma aula para assistir: é um kit para você **abrir, adaptar e usar com o seu próprio time**, sempre que precisar. Este README é o guia de uso.
 
 | | |
 |---|---|
 | Aulas relacionadas | 10.2 (comunicando decisões para múltiplos públicos), 10.4 (CNV em code reviews e decisões) e 10.5 (facilitando decisões em grupo) |
+| Formato | Kit de referência, sem aula gravada |
 | Ambiente | Material pronto (Markdown, uma página HTML offline e Python para conferência) |
 | Ordem de estudo | Independente. Usa o formato de ADR dos labs 1A e 9B |
 
@@ -12,7 +15,20 @@ Aula prática da seção 10 (Liderança Técnica e Comunicação), depois da aul
 
 Um arquiteto de alto impacto é medido tanto pelas decisões que toma quanto pela forma como o time as toma junto. As aulas desta seção mostraram quatro situações da LunaLog: uma decisão que precisa ser **comunicada de três formas** (10.2), um feedback de code review que **bloqueia** em vez de abrir a conversa (10.4), e uma reunião de quatro engenheiros seniores que, **sem estrutura**, dura duas horas e termina em "vamos pensar mais" (10.5).
 
-Este lab é um **kit pronto** para você reproduzir com o seu próprio time, sem instalar nada: uma **sessão de decisão cronometrada** com DACI e ADR escrito ao vivo, **exercícios de reescrita de feedback** com os quatro passos da CNV, e uma **mesma decisão contada para três públicos**. Há também um verificador, para mostrar que até a comunicação se confere (os números são os mesmos em todas as versões?).
+Este kit leva essas situações para a prática. É material **pronto para você consultar e reproduzir com o seu próprio time**, sem instalar nada: uma **sessão de decisão cronometrada** com DACI e ADR escrito ao vivo, **exercícios de reescrita de feedback** com os quatro passos da CNV, e uma **mesma decisão contada para três públicos**. Há também um verificador, para mostrar que até a comunicação se confere (os números são os mesmos em todas as versões?).
+
+## Como usar este kit
+
+Como não há aula para acompanhar, use o kit de acordo com o que você precisa no momento:
+
+| Se você quer... | Comece por |
+|---|---|
+| Conduzir uma decisão em grupo sem que ela vire duas horas de reunião | `01_daci/` e depois `02_sessao_de_decisao/` |
+| Dar um feedback duro em um code review sem abrir uma guerra | `03_feedback_cnv/` |
+| Apresentar a mesma decisão para o tech lead, o CFO e o board | `04_uma_decisao_tres_publicos/` |
+| Ter um exemplo pronto de ADR para copiar | `02_sessao_de_decisao/adr-resultado-exemplo.md` |
+
+Leia os passos abaixo na ordem uma vez, para entender como as peças se encaixam. Depois, volte só ao que precisar. Os arquivos são modelos: copie para o seu repositório ou para o seu documento, troque a LunaLog pelo seu contexto e adapte.
 
 ## O que tem no kit
 
@@ -115,7 +131,7 @@ As três são **verdadeiras**, cada uma no vocabulário certo. O verificador con
 
 Note o que o verificador **não** consegue: dizer se o texto é bom, persuasivo ou honesto. Ele garante a **consistência**, e o resto é com a sua leitura (e a de outra pessoa).
 
-## Como usar com o seu time
+## Colocando no dia a dia do seu time
 
 1. **Antes da próxima decisão relevante:** copie `01_daci/modelo-daci.md`, preencha e envie com o convite. Se não conseguir preencher, a decisão não está pronta para uma sessão.
 2. **Na sessão:** projete o `cronometro.html` e o ADR em branco; o Driver conduz, o Approver decide.

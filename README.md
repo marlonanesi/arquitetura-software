@@ -9,7 +9,7 @@ https://cloudforall.com.br/redirect/arquitetura-software/
 Este repositório reúne o material de apoio do curso:
 
 - **Aulas:** os slides usados em cada aula, em formato `.pdf`, na pasta `aulas/` de cada seção.
-- **Laboratórios:** 38 aulas práticas para rodar na sua máquina, na pasta `labs/` de cada seção. Veja a seção [Laboratórios](#laboratórios) mais abaixo, com os pré-requisitos e o mínimo necessário da máquina.
+- **Laboratórios:** 37 aulas práticas (seções 01 a 09) para rodar na sua máquina, mais um kit de referência na seção 10, na pasta `labs/` de cada seção. Veja a seção [Laboratórios](#laboratórios) mais abaixo, com os pré-requisitos e o mínimo necessário da máquina.
 
 ---
 
@@ -73,6 +73,8 @@ Liderança por influência sem autoridade hierárquica, comunicação para múlt
 ## Laboratórios
 
 Os laboratórios (labs) são aulas práticas: você roda na sua máquina a arquitetura discutida na aula e vê o efeito das decisões acontecendo, com comportamento e números reais. Os cenários usam a **LunaLog**, a empresa fictícia de logística e rastreamento de entregas que acompanha o curso.
+
+São 38 labs: os **37 labs das seções 01 a 09** são aulas práticas, todas já gravadas e publicadas no curso. O **lab 10A** (seção 10) é diferente: é um **kit prático de referência**, para você usar com o seu time depois das aulas da seção, e **não tem aula gravada**.
 
 Como funcionam:
 
@@ -151,9 +153,9 @@ Alguns labs formam uma sequência, em que um continua o cenário, o domínio ou 
 | Observabilidade | 6A, 6B, 6C |
 | Modernização do legado | 8B, 8C, 8D, 9C |
 
-### Lançamento progressivo
+### Aulas gravadas dos labs
 
-Os labs são publicados na Udemy de forma **progressiva e incremental**: o repositório já traz os 38 labs prontos para você rodar, e as aulas gravadas que explicam cada um chegam aos poucos no curso. A coluna **Aula na Udemy** da lista abaixo mostra o que já foi publicado (**Publicada**) e o que ainda vai chegar (**Pendente**). Todos os READMEs funcionam por conta própria, com ou sem a aula. Se algum lab for atualizado depois de publicado, a mudança entra aqui no repositório.
+Os labs das seções 01 a 09 estão **concluídos**: os 37 têm aula gravada e publicada na Udemy, explicando o lab passo a passo. O lab 10A é um kit de referência e não tem aula gravada: o README dele traz tudo o que você precisa para usar o material. A coluna **Aula na Udemy** da lista abaixo mostra a situação de cada lab. Todos os READMEs funcionam por conta própria, com ou sem a aula. Se algum lab for atualizado, a mudança entra aqui no repositório.
 
 ### Lista de labs
 
@@ -183,17 +185,17 @@ Os labs são publicados na Udemy de forma **progressiva e incremental**: o repos
 | 05 | [5C](05_ci_cd_e_estrategias_de_deploy/labs/lab-5c_blue-green-e-rolling-no-kind/) | Blue/green e rolling update no Kind | Kind | Publicada |
 | 05 | [5D](05_ci_cd_e_estrategias_de_deploy/labs/lab-5d_canary-e-rollback-automatico/) | Canary release com análise automática e rollback | Kind | Publicada |
 | 05 | [5E](05_ci_cd_e_estrategias_de_deploy/labs/lab-5e_expand-contract-migracao-reversivel/) | Expand-contract: migração de schema reversível em quatro fases | Compose | Publicada |
-| 06 | [6A](06_observabilidade/labs/lab-6a_opentelemetry-ponta-a-ponta/) | OpenTelemetry ponta a ponta: logs, métricas e traces | Compose | Pendente |
-| 06 | [6B](06_observabilidade/labs/lab-6b_prometheus-promql-e-grafana/) | Prometheus, PromQL e Grafana: métricas RED e dashboard efetivo | Compose | Pendente |
-| 06 | [6C](06_observabilidade/labs/lab-6c_alertas-por-slo-burn-rate/) | Alertas por SLO: burn rate e error budget | Compose | Pendente |
-| 07 | [7A](07_confiabilidade_e_sre/labs/lab-7a_retry-timeout-backoff-e-fallback/) | Retry, timeout, backoff e fallback sob falha | Compose | Pendente |
-| 07 | [7B](07_confiabilidade_e_sre/labs/lab-7b_chaos-engineering-no-kind/) | Chaos engineering no Kind: hipótese, experimento e resultado | Kind e Chaos Mesh | Pendente |
-| 07 | [7C](07_confiabilidade_e_sre/labs/lab-7c_disaster-recovery-rto-rpo/) | Disaster recovery: restore no tempo, standby e medição de RTO e RPO | Compose | Pendente |
-| 08 | [8A](08_modernizacao_de_sistemas_legados/labs/lab-8a_hotspots-diagnostico-de-debito/) | Diagnóstico de débito técnico por hotspots no histórico do Git | Python e Git locais (Docker opcional) | Pendente |
-| 08 | [8B](08_modernizacao_de_sistemas_legados/labs/lab-8b_strangler-fig-com-proxy/) | Strangler Fig com proxy: migrando rota a rota | Compose | Pendente |
-| 08 | [8C](08_modernizacao_de_sistemas_legados/labs/lab-8c_anti-corruption-layer-e-branch-by-abstraction/) | Anti-corruption layer e Branch by Abstraction | Compose | Pendente |
-| 08 | [8D](08_modernizacao_de_sistemas_legados/labs/lab-8d_migracao-de-dados-dual-write/) | Migração de dados: backfill, dual-write e reconciliação | Compose | Pendente |
-| 09 | [9A](09_arquitetura_evolutiva_e_governanca/labs/lab-9a_fitness-functions-no-ci/) | Fitness functions no CI: acoplamento, desempenho, segurança e compatibilidade | GitHub Actions, com simulação local em Docker | Pendente |
-| 09 | [9B](09_arquitetura_evolutiva_e_governanca/labs/lab-9b_governanca-como-codigo-guardrails/) | Governança como código: ADRs validados e guardrails de build | Docker e Python | Pendente |
-| 09 | [9C](09_arquitetura_evolutiva_e_governanca/labs/lab-9c_migracao-incremental-ponta-a-ponta/) | Migração incremental ponta a ponta: marcos, flags e critérios de rollback | Compose | Pendente |
-| 10 | [10A](10_lideranca_tecnica_e_soft_skills/labs/lab-10a_kit-de-facilitacao-daci-adr-e-cnv/) | Kit de facilitação: DACI, ADR ao vivo e reescrita de code review com CNV | Material pronto, sem instalação | Pendente |
+| 06 | [6A](06_observabilidade/labs/lab-6a_opentelemetry-ponta-a-ponta/) | OpenTelemetry ponta a ponta: logs, métricas e traces | Compose | Publicada |
+| 06 | [6B](06_observabilidade/labs/lab-6b_prometheus-promql-e-grafana/) | Prometheus, PromQL e Grafana: métricas RED e dashboard efetivo | Compose | Publicada |
+| 06 | [6C](06_observabilidade/labs/lab-6c_alertas-por-slo-burn-rate/) | Alertas por SLO: burn rate e error budget | Compose | Publicada |
+| 07 | [7A](07_confiabilidade_e_sre/labs/lab-7a_retry-timeout-backoff-e-fallback/) | Retry, timeout, backoff e fallback sob falha | Compose | Publicada |
+| 07 | [7B](07_confiabilidade_e_sre/labs/lab-7b_chaos-engineering-no-kind/) | Chaos engineering no Kind: hipótese, experimento e resultado | Kind e Chaos Mesh | Publicada |
+| 07 | [7C](07_confiabilidade_e_sre/labs/lab-7c_disaster-recovery-rto-rpo/) | Disaster recovery: restore no tempo, standby e medição de RTO e RPO | Compose | Publicada |
+| 08 | [8A](08_modernizacao_de_sistemas_legados/labs/lab-8a_hotspots-diagnostico-de-debito/) | Diagnóstico de débito técnico por hotspots no histórico do Git | Python e Git locais (Docker opcional) | Publicada |
+| 08 | [8B](08_modernizacao_de_sistemas_legados/labs/lab-8b_strangler-fig-com-proxy/) | Strangler Fig com proxy: migrando rota a rota | Compose | Publicada |
+| 08 | [8C](08_modernizacao_de_sistemas_legados/labs/lab-8c_anti-corruption-layer-e-branch-by-abstraction/) | Anti-corruption layer e Branch by Abstraction | Compose | Publicada |
+| 08 | [8D](08_modernizacao_de_sistemas_legados/labs/lab-8d_migracao-de-dados-dual-write/) | Migração de dados: backfill, dual-write e reconciliação | Compose | Publicada |
+| 09 | [9A](09_arquitetura_evolutiva_e_governanca/labs/lab-9a_fitness-functions-no-ci/) | Fitness functions no CI: acoplamento, desempenho, segurança e compatibilidade | GitHub Actions, com simulação local em Docker | Publicada |
+| 09 | [9B](09_arquitetura_evolutiva_e_governanca/labs/lab-9b_governanca-como-codigo-guardrails/) | Governança como código: ADRs validados e guardrails de build | Docker e Python | Publicada |
+| 09 | [9C](09_arquitetura_evolutiva_e_governanca/labs/lab-9c_migracao-incremental-ponta-a-ponta/) | Migração incremental ponta a ponta: marcos, flags e critérios de rollback | Compose | Publicada |
+| 10 | [10A](10_lideranca_tecnica_e_soft_skills/labs/lab-10a_kit-de-facilitacao-daci-adr-e-cnv/) | Kit de facilitação: DACI, ADR ao vivo e reescrita de code review com CNV | Material pronto, sem instalação | Sem aula (kit de referência) |
